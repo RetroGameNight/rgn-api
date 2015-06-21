@@ -1,4 +1,5 @@
 var express = require('express');
+
 var async = require('async');
 var path = require('path');
 var logger = require('morgan');
@@ -146,6 +147,10 @@ function closeConnection(req, res, next) {
     next();
 }
 
+// catch 404 and forward to error handler
+
+app.use('/', routes);
+app.use('/users', users);
 
 // catch 404 and forward to error handler
 
@@ -241,4 +246,4 @@ async.waterfall([
   startExpress(connection);
 });
 
-//module.exports = app;
+module.exports = app;
