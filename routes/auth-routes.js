@@ -3,7 +3,7 @@ module.exports = function(app, passport){
     if (req.isAuthenticated()) { return next(); }
     res.send('Not Authorized');
   }
-  
+
   app.get('/logged-in', ensureAuthenticated, function(req, res){
     res.send(req.user);
   });
