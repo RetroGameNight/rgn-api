@@ -15,7 +15,7 @@ rethinkdb.getNewConnection = function () {
 rethinkdb.init(appconfig.rethinkdb, [
   {
     name: 'users',
-    indexes: ['createdAt']
+    indexes: ['createdAt','email']
   }
 ]).then(function (conn) {
   rethinkdb.conn = conn;
