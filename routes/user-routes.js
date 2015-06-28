@@ -1,5 +1,5 @@
 module.exports = function (app, rethinkdb) {
-  app.route('/users')
+  app.route('/users/all')
       .get(listUsers)
       .post(createUser);             // Retrieve all the todos
   app.route('/users/new')
@@ -36,9 +36,10 @@ module.exports = function (app, rethinkdb) {
   function getUser(req, res, next) {
     var userID = req.params.id;
 
-    rethinkdb.table('users').get(userID).run(rethinkdb.conn, function(err, result) {
-      if(err) {
-        return next(err);
+    rethinkdb.table('users').get(userID).run(rethinkdb.conn, function(error, result) {
+      if(error) {
+        handleError(res, error) 
+        next();
       }
       res.json(result);
     });
@@ -46,32 +47,37 @@ module.exports = function (app, rethinkdb) {
 
   function createUser(req, res, next) {
       var user = req.body;         // req.body was created by `bodyParser`
-      rethinkdb.createdAt = rethinkdb.now();    // Set the field `createdAt` to the current time
+      user.createdAt = rethinkdb.now();    // Set the field `createdAt` to the current time
 
       rethinkdb.table('users').insert(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if (error) {
               handleError(res, error) 
+              next();
           }
           else if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted.")) 
+              handleError(res, new Error("Document was not inserted."));
+              next();
           }
           else {
-              res.send(JSON.stringify(result.changes[0].new_val));
+              res.json(result.changes[0].new_val);
           }
-          next();
       });
   }
 
   function updateUser(req, res, next) {
     var user = req.body;
+    user.createdAt = req.body.createdAt;
     var userID = req.params.id;
 
-    rethinkdb.table('users').get(userID).update(user, {returnChanges: true}).run(rethinkdb.conn, function(err, result) {
-      if(err) {
-        return next(err);
+    rethinkdb.table('users').get(userID).update(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
+      if(error) {
+        //handleError(res, error) 
+        throw error;
+        next();
       }
-
-      res.json(result.changes[0].new_val);
+      else {
+        res.json(result.changes[0].new_val);      
+      }
     });
   }
 
@@ -81,12 +87,14 @@ module.exports = function (app, rethinkdb) {
   function deleteUser(req, res, next) {
     var userID = req.params.id;
 
-    rethinkdb.table('users').get(userID).delete().run(rethinkdb.conn, function(err, result) {
-      if(err) {
-        return next(err);
+    rethinkdb.table('users').get(userID).delete().run(rethinkdb.conn, function(error, result) {
+      if(error) {
+        handleError(res, error) 
+        next();
       }
-
-      res.json({success: true});
+      else {
+        res.json({success: true});
+      }
     });
   }
 }

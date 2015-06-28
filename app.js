@@ -31,5 +31,6 @@ require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passpo
 // Load in authentication routes
 require('./routes/auth-routes')(app, passport);
 require('./routes/user-routes')(app, rethinkdb);
+require('./routes/night-routes')(app, rethinkdb);
 // Start server
 app.listen(3000);
