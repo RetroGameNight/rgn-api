@@ -10,7 +10,3 @@ $ brew install rethinkdb
 Start database
 
 $ rethinkdb
-
-Start app
-
-$ node bin/www
