@@ -35,7 +35,6 @@ module.exports = function (app, rethinkdb) {
 
   function getUser(req, res, next) {
     var userID = req.params.id;
-
     rethinkdb.table('users').get(userID).run(rethinkdb.conn, function(error, result) {
       if(error) {
         handleError(res, error) 
@@ -48,7 +47,6 @@ module.exports = function (app, rethinkdb) {
   function createUser(req, res, next) {
       var user = req.body;         // req.body was created by `bodyParser`
       user.createdAt = rethinkdb.now();    // Set the field `createdAt` to the current time
-
       rethinkdb.table('users').insert(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if (error) {
               handleError(res, error) 
