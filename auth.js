@@ -65,7 +65,7 @@ module.exports = function (FacebookStrategy, GoogleStrategy, rethinkdb, appconfi
           return {
             'name': profile.displayName || null,
             'email': profile.emails[0].value,
-            //'avatarUrl': profile._json.avatar_url,
+            'avatarUrl': profile._json.avatar_url,
             'type': 'google',
             'createdAt': rethinkdb.now()
           };
@@ -81,7 +81,7 @@ module.exports = function (FacebookStrategy, GoogleStrategy, rethinkdb, appconfi
       return {
         'name': profile.displayName || null,
         'email': profile.emails[0].value,
-        //'avatarUrl': profile._json.avatar_url,
+        'avatarUrl': profile._json.avatar_url,
         'type': 'facebook',
         'createdAt': rethinkdb.now()
       };

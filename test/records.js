@@ -11,12 +11,12 @@ describe('Routing', function(){
     }, 500);
     
   });
-  var testUser = {};
-  describe('User API Routing', function() {
+  var testRecord = {};
+  describe('Records API Routing', function() {
 
-    it('should create a new user with post', function(done) {
+    it('should create a new record with post', function(done) {
       request(app)
-      .post('/users/new')
+      .post('/records/new')
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -25,13 +25,14 @@ describe('Routing', function(){
         }
         res.body.should.have.property("createdAt");
         res.body.should.have.property("id");
-        testUser = res.body;
+        testRecord = res.body;
         done();
       });
     });
-    it('should list all users', function(done) {
+    
+    it('should list all records', function(done) {
         request(app)
-        .get('/users/all')
+        .get('/records/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
@@ -39,49 +40,50 @@ describe('Routing', function(){
             throw err;
           }
           res.body.length.should.be.above(0);
-          res.body.should.containEql(testUser);
+          res.body.should.containEql(testRecord);
           done();
         });
     });
 
-    it('should get user by id', function(done) {
+    it('should get record by id', function(done) {
       request(app)
-      .get('/users/' + testUser.id)
+      .get('/records/' + testRecord.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testUser);
+        res.body.should.containEql(testRecord);
         done();
       });
     });
 
-    it('should update user by id', function(done) {
-      var testUserJSON = {
-        'email':'test@test.com',
-        'name':'Test Guy',
-        'avatarURL':'Test URL',
-        'type':'test'
+    it('should update record by id', function(done) {
+      var testRecordJSON = {
+        'user':'Test Record',
+        'issuer':'Test Game',
+        'challenge':'Test Challenge',
+        'players':['Player 1','avidreder@gmail.com'],
+        'status':'Open'
       };
       request(app)
-      .put('/users/' + testUser.id)
-      .send(testUserJSON)
+      .put('/records/' + testRecord.id)
+      .send(testRecordJSON)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testUserJSON);
+        res.body.should.containEql(testRecordJSON);
         done();
       });
     });
     
-    it('should delete user by id', function(done) {
+    it('should delete record by id', function(done) {
       request(app)
-      .delete('/users/' + testUser.id)
+      .delete('/records/' + testRecord.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -90,14 +92,14 @@ describe('Routing', function(){
         }
         res.body.should.containEql('success');
         request(app)
-        .get('/users/all')
+        .get('/records/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
           if (err) {
             throw err;
           }
-          res.body.should.not.containEql(testUser);
+          res.body.should.not.containEql(testRecord);
           done();
         });
       });

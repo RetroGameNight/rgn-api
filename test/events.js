@@ -12,11 +12,11 @@ describe('Routing', function(){
     
   });
   var testUser = {};
-  describe('User API Routing', function() {
+  describe('Events API Routing', function() {
 
-    it('should create a new user with post', function(done) {
+    it('should create a new event with post', function(done) {
       request(app)
-      .post('/users/new')
+      .post('/events/new')
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -25,13 +25,14 @@ describe('Routing', function(){
         }
         res.body.should.have.property("createdAt");
         res.body.should.have.property("id");
-        testUser = res.body;
+        testEvent = res.body;
         done();
       });
     });
-    it('should list all users', function(done) {
+    
+    it('should list all events', function(done) {
         request(app)
-        .get('/users/all')
+        .get('/events/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
@@ -39,49 +40,52 @@ describe('Routing', function(){
             throw err;
           }
           res.body.length.should.be.above(0);
-          res.body.should.containEql(testUser);
+          res.body.should.containEql(testEvent);
           done();
         });
     });
 
-    it('should get user by id', function(done) {
+    it('should get event by id', function(done) {
       request(app)
-      .get('/users/' + testUser.id)
+      .get('/events/' + testEvent.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testUser);
+        res.body.should.containEql(testEvent);
         done();
       });
     });
 
-    it('should update user by id', function(done) {
-      var testUserJSON = {
-        'email':'test@test.com',
-        'name':'Test Guy',
+    it('should update event by id', function(done) {
+      var testEventJSON = {
+        'name':'Test game night',
+        'startTime':'Now',
+        'endTime':'Four hours from now',
+        'people':['avidreder@gmail.com','test@test.com'],
         'avatarURL':'Test URL',
+        'owner':'avidreder@gmail.com',
         'type':'test'
       };
       request(app)
-      .put('/users/' + testUser.id)
-      .send(testUserJSON)
+      .put('/events/' + testEvent.id)
+      .send(testEventJSON)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testUserJSON);
+        res.body.should.containEql(testEventJSON);
         done();
       });
     });
     
-    it('should delete user by id', function(done) {
+    it('should delete event by id', function(done) {
       request(app)
-      .delete('/users/' + testUser.id)
+      .delete('/events/' + testEvent.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -90,14 +94,14 @@ describe('Routing', function(){
         }
         res.body.should.containEql('success');
         request(app)
-        .get('/users/all')
+        .get('/events/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
           if (err) {
             throw err;
           }
-          res.body.should.not.containEql(testUser);
+          res.body.should.not.containEql(testEvent);
           done();
         });
       });

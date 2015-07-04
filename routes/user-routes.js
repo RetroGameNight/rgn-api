@@ -10,7 +10,7 @@ module.exports = function (app, rethinkdb) {
     .delete(deleteUser);      // Delete a specific user
 
   function listUsers(req, res, next) {
-      rethinkdb.table('users').orderBy({index: "id"}).run(rethinkdb.conn, function(error, cursor) {
+      rethinkdb.table('users').orderBy({index: "createdAt"}).run(rethinkdb.conn, function(error, cursor) {
           if (error) {
               handleError(res, error) 
               next();
@@ -42,8 +42,13 @@ module.exports = function (app, rethinkdb) {
   }
 
   function createUser(req, res, next) {
-      var user = req.body;         // req.body was created by `bodyParser`
-      user.createdAt = rethinkdb.now();    // Set the field `createdAt` to the current time
+      var user = {};
+      user.name = req.body.name || "Anonymous";
+      user.email = req.body.email || "Anonymous";
+      user.avatarURL = req.body.avatarURL || "";
+      user.type = req.body.type || "other";        // req.body was created by `bodyParser`
+      user.createdAt = rethinkdb.now();
+      user.lastUpdated = rethinkdb.now();    // Set the field `createdAt` to the current time
       rethinkdb.table('users').insert(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if (error) {
               handleError(res, error) 
@@ -60,18 +65,31 @@ module.exports = function (app, rethinkdb) {
   }
 
   function updateUser(req, res, next) {
-    var user = req.body;
-    user.createdAt = req.body.createdAt;
     var userID = req.params.id;
-
-    rethinkdb.table('users').get(userID).update(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
+    var currentUser = {};
+    var user = {};
+    rethinkdb.table('users').get(userID).run(rethinkdb.conn, function(error, result) {
       if(error) {
-        //handleError(res, error) 
-        throw error;
+        handleError(res, error) 
         next();
       }
       else {
-        res.json(result.changes[0].new_val);      
+        currentUser = result;
+        user.name = req.body.name || currentUser.name;
+        user.email = req.body.email || currentUser.email;
+        user.avatarURL = req.body.avatarURL || currentUser.avatarURL;
+        user.type = req.body.type || currentUser.type;        // req.body was created by `bodyParser`
+        user.lastUpdated = rethinkdb.now();
+        rethinkdb.table('users').get(userID).update(user, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
+          if(error) {
+            //handleError(res, error) 
+            throw error;
+            next();
+          }
+          else {
+            res.json(result.changes[0].new_val);      
+          }
+        });
       }
     });
   }
