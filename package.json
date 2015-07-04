@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./app"
   },
   "dependencies": {
     "body-parser": "~1.13.1",
@@ -18,7 +18,6 @@
     "morgan": "~1.6.0",
     "passport": "latest",
     "passport-google-oauth": "latest",
-    "readyness": "^0.1.0",
     "rethinkdb-init": "0.0.4",
     "should": "^7.0.1",
     "supertest": "^1.0.1"

@@ -11,13 +11,89 @@ describe('Routing', function(){
     }, 500);
     
   });
-
+  var testUser = {};
   describe('User API Routing', function() {
-    it('should create a new user with get', function(done) {
+    it('should create a new user with post', function(done) {
       request(app)
-    	.get('/users/new')
+      .post('/users/new')
       .expect('Content-Type', /json/)
-      .expect(200,done);
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          throw err;
+        }
+        res.body.should.have.property("createdAt");
+        res.body.should.have.property("id");
+        testUser.createdAt = res.body.createdAt;
+        testUser.id = res.body.id;
+        done();
+      });
+    });
+    it('should list all users', function(done) {
+        request(app)
+        .get('/users/all')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res){
+          if (err) {
+            throw err;
+          }
+          res.body.length.should.be.above(0);
+          res.body.should.containEql(testUser);
+          done();
+        });
+    });
+    it('should get user by id', function(done) {
+      request(app)
+      .get('/users/' + testUser.id)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          throw err;
+        }
+        res.body.should.containEql(testUser);
+        done();
+      });
+    });
+    it('should update user by id', function(done) {
+      var testTimeJSON = {'createdAt':'yesterday'};
+      request(app)
+      .put('/users/' + testUser.id)
+      .send(testTimeJSON)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          throw err;
+        }
+        console.log(res.body);
+        res.body.should.containEql(testTimeJSON);
+        done();
+      });
+    });
+    it('should delete user by id', function(done) {
+      request(app)
+      .delete('/users/' + testUser.id)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          throw err;
+        }
+        res.body.should.containEql('success');
+        request(app)
+        .get('/users/all')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res){
+          if (err) {
+            throw err;
+          }
+          res.body.should.not.containEql(testUser);
+          done();
+        });
+      });
     });
   });
 });

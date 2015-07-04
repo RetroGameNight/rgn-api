@@ -15,11 +15,18 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 
 // Initialize Express App
 var app = express();
-app.use(logger());
+app.use(logger('combined'));
 app.use(cookieParser());
-app.use(bodyParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 app.use(methodOverride());
-app.use(session({ secret: 'keyboard cat' }));
+app.use(session({
+	secret: 'gamez rock',
+	resave: true,
+	saveUninitialized: true
+}));
 
 // Initialize Passport!  Also use passport.session() middleware, to support
 // persistent login sessions (recommended).

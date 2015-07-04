@@ -37,7 +37,6 @@ rethinkdb.init(appconfig.rethinkdb, [
   rethinkdb.conn = conn;
   rethinkdb.connections.push(conn);
   rethinkdb.conn.use(appconfig.rethinkdb.db);
-  console.log("we are initializing the db connection here") ;
 });
 
 module.exports = rethinkdb;

@@ -1,19 +1,16 @@
 module.exports = function (app, rethinkdb) {
   app.route('/users/all')
-      .get(listUsers)
-      .post(createUser);             // Retrieve all the todos
+    .get(listUsers)           // List all users
   app.route('/users/new')
-      .post(createUser)             // Create a new todo
-      .get(createUser);
+    .post(createUser)         // Create a new user
+    .get(createUser);
   app.route('/users/:id')
-    .get(getUser)
-    .put(updateUser)
-    .delete(deleteUser);
-  //app.route('/user/update').put(update);         // Update a todo
-  //app.route('/user/delete').post(del);        // Delete a todo
+    .get(getUser)             // Get a specific user
+    .put(updateUser)          // Update a specific user
+    .delete(deleteUser);      // Delete a specific user
 
   function listUsers(req, res, next) {
-      rethinkdb.table('users').orderBy({index: "createdAt"}).run(rethinkdb.conn, function(error, cursor) {
+      rethinkdb.table('users').orderBy({index: "id"}).run(rethinkdb.conn, function(error, cursor) {
           if (error) {
               handleError(res, error) 
               next();
