@@ -37,7 +37,8 @@ module.exports = function(app, passport){
   app.get('/auth/google/callback', 
     passport.authenticate('google'),
     function(req, res) {
-      res.send(req.user);
+      //res.send(req.user);
+      res.redirect('http://localhost:8081');
     });
 
   app.get('/auth/facebook',
@@ -55,6 +56,7 @@ module.exports = function(app, passport){
   app.get('/auth/facebook/callback', 
     passport.authenticate('facebook'),
     function(req, res) {
-      res.send(req.user);
+      //res.send(req.user);
+      res.redirect('http://localhost:8081');
     });
 }
