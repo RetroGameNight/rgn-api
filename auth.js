@@ -21,6 +21,7 @@ module.exports = function (FacebookStrategy, GoogleStrategy, rethinkdb, appconfi
 
   var loginCallbackHandler = function (objectMapper, type) {
   return function (accessToken, refreshToken, profile, done) {
+    console.log(profile);
     if (accessToken !== null) {
       rethinkdb
         .table('users')
@@ -65,7 +66,7 @@ module.exports = function (FacebookStrategy, GoogleStrategy, rethinkdb, appconfi
           return {
             'name': profile.displayName || null,
             'email': profile.emails[0].value,
-            'avatarUrl': profile._json.avatar_url,
+            'avatarUrl': '',
             'type': 'google',
             'createdAt': rethinkdb.now()
           };
@@ -81,7 +82,7 @@ module.exports = function (FacebookStrategy, GoogleStrategy, rethinkdb, appconfi
       return {
         'name': profile.displayName || null,
         'email': profile.emails[0].value,
-        'avatarUrl': profile._json.avatar_url,
+        'avatarUrl': '',
         'type': 'facebook',
         'createdAt': rethinkdb.now()
       };
