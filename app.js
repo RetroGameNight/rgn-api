@@ -15,6 +15,20 @@ var FacebookStrategy = require('passport-facebook').Strategy;
 
 // Initialize Express App
 var app = express();
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:8081');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.send(200);
+    }
+    else {
+      next();
+    }
+};
+app.use(allowCrossDomain);
 app.use(logger('combined'));
 app.use(cookieParser());
 app.use(bodyParser.json());
@@ -32,7 +46,6 @@ app.use(session({
 // persistent login sessions (recommended).
 app.use(passport.initialize());
 app.use(passport.session());
-
 require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport);
 
 // Load in authentication routes
