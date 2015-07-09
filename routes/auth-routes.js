@@ -5,6 +5,9 @@ module.exports = function(app, passport){
   }
 
   app.get('/logged-in', ensureAuthenticated, function(req, res){
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
     res.send(req.user);
   });
 
