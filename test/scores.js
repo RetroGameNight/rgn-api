@@ -11,12 +11,12 @@ describe('Routing', function(){
     }, 500);
     
   });
-  var testRecord = {};
-  describe('Records API Routing', function() {
+  var testScore = {};
+  describe('Scores API Routing', function() {
 
-    it('should create a new record with post', function(done) {
+    it('should create a new score with post', function(done) {
       request(app)
-      .post('/records/new')
+      .post('/scores/new')
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -25,14 +25,14 @@ describe('Routing', function(){
         }
         res.body.should.have.property("createdAt");
         res.body.should.have.property("id");
-        testRecord = res.body;
+        testScore = res.body;
         done();
       });
     });
     
-    it('should list all records', function(done) {
+    it('should list all scores', function(done) {
         request(app)
-        .get('/records/all')
+        .get('/scores/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
@@ -40,50 +40,50 @@ describe('Routing', function(){
             throw err;
           }
           res.body.length.should.be.above(0);
-          res.body.should.containEql(testRecord);
+          res.body.should.containEql(testScore);
           done();
         });
     });
 
-    it('should get record by id', function(done) {
+    it('should get score by id', function(done) {
       request(app)
-      .get('/records/' + testRecord.id)
+      .get('/scores/' + testScore.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testRecord);
+        res.body.should.containEql(testScore);
         done();
       });
     });
 
-    it('should update record by id', function(done) {
-      var testRecordJSON = {
-        'user':'Test Record',
+    it('should update score by id', function(done) {
+      var testScoreJSON = {
+        'user':'Test score',
         'issuer':'Test Game',
         'challenge':'Test Challenge',
-        'players':['Player 1','avidreder@gmail.com'],
+        'player':'Player 1',
         'status':'Open'
       };
       request(app)
-      .put('/records/' + testRecord.id)
-      .send(testRecordJSON)
+      .put('/scores/' + testScore.id)
+      .send(testScoreJSON)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testRecordJSON);
+        res.body.should.containEql(testScoreJSON);
         done();
       });
     });
     
-    it('should delete record by id', function(done) {
+    it('should delete score by id', function(done) {
       request(app)
-      .delete('/records/' + testRecord.id)
+      .delete('/scores/' + testScore.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -92,14 +92,14 @@ describe('Routing', function(){
         }
         res.body.should.containEql('success');
         request(app)
-        .get('/records/all')
+        .get('/scores/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
           if (err) {
             throw err;
           }
-          res.body.should.not.containEql(testRecord);
+          res.body.should.not.containEql(testScore);
           done();
         });
       });

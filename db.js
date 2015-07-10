@@ -30,7 +30,7 @@ rethinkdb.init(appconfig.rethinkdb, [
     indexes: ['createdAt']
   },
   {
-    name: 'records',
+    name: 'scores',
     indexes: ['createdAt']
   } 
 ]).then(function (conn) {
