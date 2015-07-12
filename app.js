@@ -38,9 +38,9 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(methodOverride());
 app.use(session({
-	secret: 'gamez rock',
-	resave: true,
-	saveUninitialized: true
+  secret: 'gamez rock',
+  resave: true,
+  saveUninitialized: true
 }));
 
 // Initialize Passport!  Also use passport.session() middleware, to support
