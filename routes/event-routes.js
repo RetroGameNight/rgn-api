@@ -88,7 +88,7 @@ module.exports = function (app, rethinkdb) {
         updatedEvent.people = req.body.people || currentEvent.people;
         updatedEvent.endTime = req.body.endTime || currentEvent.endTime;
         updatedEvent.avatarURL = req.body.avatarURL || currentEvent.avatarURL;
-        updatedEvent.type = req.body.type || currentUser.type;        // req.body was created by `bodyParser`
+        updatedEvent.type = req.body.type || currentEvent.type;        // req.body was created by `bodyParser`
         updatedEvent.lastUpdated = rethinkdb.now();
         rethinkdb.table('events').get(eventID).update(updatedEvent, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if(error) {
