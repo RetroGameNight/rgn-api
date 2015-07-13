@@ -9,6 +9,9 @@ module.exports = function (app, rethinkdb) {
     .put(updateGame)          // Update a specific game
     .delete(deleteGame);      // Delete a specific game
 
+  app.route('/games/:id/challenges')
+    .get(getChallengesForGame)             // Get a specific game
+
   function listGames(req, res, next) {
       rethinkdb.table('games').orderBy({index: "createdAt"}).run(rethinkdb.conn, function(error, cursor) {
           if (error) {
@@ -106,6 +109,28 @@ module.exports = function (app, rethinkdb) {
       else {
         res.json({success: true});
       }
+    });
+  }
+
+  function getChallengesForGame(req, res, next){
+    var gameID = req.params.id;
+    rethinkdb.table('challenges').filter({'game':gameID}).run(rethinkdb.conn, function(error, cursor) {
+      if (error) {
+              handleError(res, error) 
+              next();
+          }
+          else {
+              // Retrieve all the todos in an array
+              cursor.toArray(function(error, result) {
+                  if (error) {
+                      handleError(res, error) 
+                  }
+                  else {
+                      // Send back the data
+                      res.json(result);
+                  }
+              });
+          }
     });
   }
 }

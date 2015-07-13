@@ -27,7 +27,7 @@ rethinkdb.init(appconfig.rethinkdb, [
   },
   {
     name: 'challenges',
-    indexes: ['createdAt']
+    indexes: ['createdAt','game']
   },
   {
     name: 'scores',
