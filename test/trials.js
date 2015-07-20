@@ -11,12 +11,12 @@ describe('Routing', function(){
     }, 500);
     
   });
-  var testChallenge = {};
-  describe('Challenges API Routing', function() {
+  var testTrial = {};
+  describe('Trials API Routing', function() {
 
-    it('should create a new challenge with post', function(done) {
+    it('should create a new trial with post', function(done) {
       request(app)
-      .post('/challenges/new')
+      .post('/trials/new')
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -25,14 +25,14 @@ describe('Routing', function(){
         }
         res.body.should.have.property("createdAt");
         res.body.should.have.property("id");
-        testChallenge = res.body;
+        testTrial = res.body;
         done();
       });
     });
     
-    it('should list all challenges', function(done) {
+    it('should list all trials', function(done) {
         request(app)
-        .get('/challenges/all')
+        .get('/trials/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
@@ -40,50 +40,50 @@ describe('Routing', function(){
             throw err;
           }
           res.body.length.should.be.above(0);
-          res.body.should.containEql(testChallenge);
+          res.body.should.containEql(testTrial);
           done();
         });
     });
 
-    it('should get challenge by id', function(done) {
+    it('should get trial by id', function(done) {
       request(app)
-      .get('/challenges/' + testChallenge.id)
-      .expect('Content-Type', /json/)
+      .get('/trials/' + testTrial.id)
+      //.expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testChallenge);
+        res.body.should.containEql(testTrial);
         done();
       });
     });
 
-    it('should update challenge by id', function(done) {
-      var testChallengeJSON = {
-        'trial':'Test Trial',
-        //'goal':'Test Goal',
-        'issuer':'Anonymous',
-        'player':'Anonymous',
-        'challengeStatus':'Pending'
+    it('should update trial by id', function(done) {
+      var testTrialJSON = {
+        'name':'Test Trial',
+        'game':'Test Game',
+        'type':'Test Type',
+        'description':'Test Description',
+        'creator':'Anonymous'
       };
       request(app)
-      .put('/challenges/' + testChallenge.id)
-      .send(testChallengeJSON)
+      .put('/trials/' + testTrial.id)
+      .send(testTrialJSON)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
         if (err) {
           throw err;
         }
-        res.body.should.containEql(testChallengeJSON);
+        res.body.should.containEql(testTrialJSON);
         done();
       });
     });
     
-    it('should delete challenge by id', function(done) {
+    it('should delete trial by id', function(done) {
       request(app)
-      .delete('/challenges/' + testChallenge.id)
+      .delete('/trials/' + testTrial.id)
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res){
@@ -92,14 +92,14 @@ describe('Routing', function(){
         }
         res.body.should.containEql('success');
         request(app)
-        .get('/challenges/all')
+        .get('/trials/all')
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res){
           if (err) {
             throw err;
           }
-          res.body.should.not.containEql(testChallenge);
+          res.body.should.not.containEql(testTrial);
           done();
         });
       });

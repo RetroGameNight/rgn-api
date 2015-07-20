@@ -55,6 +55,7 @@ require('./routes/user-routes')(app, rethinkdb);
 require('./routes/event-routes')(app, rethinkdb);
 require('./routes/game-routes')(app, rethinkdb);
 require('./routes/challenge-routes')(app, rethinkdb);
+require('./routes/trial-routes')(app, rethinkdb);
 require('./routes/score-routes')(app, rethinkdb);
 // Start server
 app.listen(3000);

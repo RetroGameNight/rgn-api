@@ -103,13 +103,13 @@ describe('Routing', function(){
       });
     });
 
-    it('should list challenges for a game id', function(done) {
+    it('should list trials for a game id', function(done) {
       createTestGame(function(game){
         var testGame = game;
-        createTestChallenge(testGame.id, function(challenge){
-          var testChallenge = challenge;
+        createTestTrial(testGame.id, function(trial){
+          var testTrial = trial;
           request(app)
-          .get('/challenges/all')
+          .get('/trials/all')
           .expect('Content-Type', /json/)
           .expect(200)
           .end(function(err, res){
@@ -117,17 +117,17 @@ describe('Routing', function(){
               throw err;
             }
             request(app)
-            .get('/games/' + testGame.id + '/challenges')
+            .get('/games/' + testGame.id + '/trials')
             .expect('Content-Type', /json/)
             .expect(200)
             .end(function(err, res){
               if (err) {
                 throw err;
               }
-              res.body.should.containEql(testChallenge);
+              res.body.should.containEql(testTrial);
               
               // break down test objects
-              deleteTestChallenge(testChallenge.id);
+              deleteTestTrial(testTrial.id);
               deleteTestGame(testGame.id);
               done();
             });
@@ -138,18 +138,17 @@ describe('Routing', function(){
   });
 });
 
-function createTestChallenge(gameId, callback){
-  var testChallengeJSON = {
-    'name':'Test Challenge',
+function createTestTrial(gameId, callback){
+  var testTrialJSON = {
+    'name':'Test Trial',
     'game': gameId,
-    'avatarURL':'Test URL',
     'type': 'Point',
-    'goal': '10000',
+    'description': 'Test Description',
     'creator': 'Anonymous'
   };
   request(app)
-    .post('/challenges/new')
-    .send(testChallengeJSON)
+    .post('/trials/new')
+    .send(testTrialJSON)
     .end(function(err, res){
       if (err) {
         throw err;
@@ -175,14 +174,14 @@ function createTestGame(callback) {
   });
 }
 
-function deleteTestChallenge(id){
+function deleteTestTrial(id){
   request(app)
-  .delete('/challenges/' + id)
+  .delete('/trials/' + id)
   .end(function(err, res){
     if (err) {
       throw err;
     }
-    done();
+    //done();
   });
 }
 
@@ -193,6 +192,6 @@ function deleteTestGame(id){
     if (err) {
       throw err;
     }
-    done();
+    //done();
   });
 }

@@ -26,12 +26,16 @@ rethinkdb.init(appconfig.rethinkdb, [
     indexes: ['createdAt']
   },
   {
+    name: 'trials',
+    indexes: ['createdAt','game']
+  },
+  {
     name: 'challenges',
     indexes: ['createdAt','game']
   },
   {
     name: 'scores',
-    indexes: ['createdAt']
+    indexes: ['lastUpdated','challenge']
   } 
 ]).then(function (conn) {
   rethinkdb.conn = conn;

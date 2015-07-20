@@ -1,6 +1,8 @@
 module.exports = function (app, rethinkdb) {
+  app.route('/scores/latest')
+    .get(listRecentScores)
   app.route('/scores/all')
-    .get(listScores)           // List all scores
+    .get(listScores)
   app.route('/scores/new')
     .post(createScore)         // Create a new score
     .get(createScore);
@@ -10,16 +12,37 @@ module.exports = function (app, rethinkdb) {
     .delete(deleteScore);      // Delete a specific score
 
   function listScores(req, res, next) {
-      rethinkdb.table('scores').orderBy({index: "createdAt"}).run(rethinkdb.conn, function(error, cursor) {
+      rethinkdb.table('scores').orderBy({index: "lastUpdated"}).run(rethinkdb.conn, function(error, cursor) {
           if (error) {
-              handleError(res, error) 
+              res.send(error) 
               next();
           }
           else {
               // Retrieve all the todos in an array
               cursor.toArray(function(error, result) {
                   if (error) {
-                      handleError(res, error) 
+                      res.send(error) 
+                  }
+                  else {
+                      // Send back the data
+                      res.json(result);
+                  }
+              });
+          }
+      });
+  }
+  function listRecentScores(req, res, next) {
+      var numScores = parseInt(req.query.scores) || 10;
+      rethinkdb.table('scores').orderBy({index: "lastUpdated"}).limit(numScores).run(rethinkdb.conn, function(error, cursor) {
+          if (error) {
+              res.send(error) 
+              next();
+          }
+          else {
+              // Retrieve all the todos in an array
+              cursor.toArray(function(error, result) {
+                  if (error) {
+                      res.send(error) 
                   }
                   else {
                       // Send back the data
@@ -34,7 +57,7 @@ module.exports = function (app, rethinkdb) {
     var scoreID = req.params.id;
     rethinkdb.table('scores').get(scoreID).run(rethinkdb.conn, function(error, result) {
       if(error) {
-        handleError(res, error) 
+        res.send(error) 
         next();
       }
       res.json(result);
@@ -44,15 +67,16 @@ module.exports = function (app, rethinkdb) {
   function createScore(req, res, next) {
       var score = {};
       score.user = req.body.user || 'Anonymous';
-      score.issuer = req.body.issuer || 'Anonymous';
-      score.player = req.body.players || 'Anoymous';
-      score.challenge = req.body.challenge || ['Super Mario 10000 Points'];
-      score.status = req.body.status || ['Open'];
+      score.issuer = req.body.issuer || '';
+      score.player = req.body.players || 'Anonymous';
+      score.challenge = req.body.challenge || 'Super Mario 10000 Points';
+      score.status = req.body.status || 'Open';
+      score.result = req.body.score || '';
       score.createdAt = rethinkdb.now();
       score.lastUpdated = rethinkdb.now();    // Set the field `createdAt` to the current time
       rethinkdb.table('scores').insert(score, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if (error) {
-              handleError(res, error) 
+              res.send(error) 
               next();
           }
           else if (result.inserted !== 1) {
@@ -71,7 +95,7 @@ module.exports = function (app, rethinkdb) {
     var score = {};
     rethinkdb.table('scores').get(scoreID).run(rethinkdb.conn, function(error, result) {
       if(error) {
-        handleError(res, error) 
+        res.send(error) 
         next();
       }
       else {
@@ -81,10 +105,11 @@ module.exports = function (app, rethinkdb) {
         score.player = req.body.player || currentScore.player;
         score.challenge = req.body.challenge || currentScore.challenge;
         score.status = req.body.status || currentScore.status;
+        score.result = req.body.result || currentScore.result;
         score.lastUpdated = rethinkdb.now();
         rethinkdb.table('scores').get(scoreID).update(score, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if(error) {
-            //handleError(res, error) 
+            //res.send(error) 
             throw error;
             next();
           }
@@ -104,7 +129,7 @@ module.exports = function (app, rethinkdb) {
 
     rethinkdb.table('scores').get(scoreID).delete().run(rethinkdb.conn, function(error, result) {
       if(error) {
-        handleError(res, error) 
+        res.send(error) 
         next();
       }
       else {

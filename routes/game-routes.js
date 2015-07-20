@@ -9,8 +9,8 @@ module.exports = function (app, rethinkdb) {
     .put(updateGame)          // Update a specific game
     .delete(deleteGame);      // Delete a specific game
 
-  app.route('/games/:id/challenges')
-    .get(getChallengesForGame)             // Get a specific game
+  app.route('/games/:id/trials')
+    .get(getTrialsForGame)             // Get a specific game
 
   function listGames(req, res, next) {
       rethinkdb.table('games').orderBy({index: "createdAt"}).run(rethinkdb.conn, function(error, cursor) {
@@ -112,9 +112,9 @@ module.exports = function (app, rethinkdb) {
     });
   }
 
-  function getChallengesForGame(req, res, next){
+  function getTrialsForGame(req, res, next){
     var gameID = req.params.id;
-    rethinkdb.table('challenges').filter({'game':gameID}).run(rethinkdb.conn, function(error, cursor) {
+    rethinkdb.table('trials').filter({'game':gameID}).run(rethinkdb.conn, function(error, cursor) {
       if (error) {
               handleError(res, error) 
               next();

@@ -12,6 +12,7 @@ describe('Routing', function(){
     
   });
   var testScore = {};
+  var secondId = '';
   describe('Scores API Routing', function() {
 
     it('should create a new score with post', function(done) {
@@ -45,6 +46,33 @@ describe('Routing', function(){
         });
     });
 
+    it('should get most recent scores', function(done) {
+      request(app)
+      .post('/scores/new')
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res){
+        if (err) {
+          throw err;
+        }
+        secondId = res.body.id;
+        request(app)
+        .get('/scores/latest')
+        .query({ scores: 2})
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res){
+          if (err) {
+            throw err;
+          }
+          res.body.length.should.equal(2);
+          done();
+        });
+      });
+
+      
+    });
+
     it('should get score by id', function(done) {
       request(app)
       .get('/scores/' + testScore.id)
@@ -65,7 +93,8 @@ describe('Routing', function(){
         'issuer':'Test Game',
         'challenge':'Test Challenge',
         'player':'Player 1',
-        'status':'Open'
+        'status':'Open',
+        'result': '10000'
       };
       request(app)
       .put('/scores/' + testScore.id)

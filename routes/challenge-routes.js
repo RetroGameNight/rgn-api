@@ -43,12 +43,11 @@ module.exports = function (app, rethinkdb) {
 
   function createChallenge(req, res, next) {
       var challenge = {};
-      challenge.name = req.body.name || "Unnamed challenge";
-      challenge.game = req.body.game || "Unnamed Game";
-      challenge.avatarURL = req.body.avatarURL || "";
-      challenge.type = req.body.type || "Point";
-      challenge.goal = req.body.goal || "10000";
-      challenge.creator = req.body.creator || "Anonymous";
+      challenge.trial = req.body.trial || "Unnamed Trial";
+      //challenge.goal = req.body.goal || "10000";
+      challenge.issuer = req.body.issuer || "Anonymous";
+      challenge.player = req.body.player || "Anonymous";
+      challenge.challengeStatus = req.body.challengeStatus || "Pending";
       challenge.createdAt = rethinkdb.now();
       challenge.lastUpdated = rethinkdb.now();    // Set the field `createdAt` to the current time
       rethinkdb.table('challenges').insert(challenge, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
@@ -68,7 +67,7 @@ module.exports = function (app, rethinkdb) {
 
   function updateChallenge(req, res, next) {
     var challengeID = req.params.id;
-    var currentchallenge = {};
+    var currentChallenge = {};
     var challenge = {};
     rethinkdb.table('challenges').get(challengeID).run(rethinkdb.conn, function(error, result) {
       if(error) {
@@ -77,12 +76,11 @@ module.exports = function (app, rethinkdb) {
       }
       else {
         currentchallenge = result;
-        challenge.name = req.body.name || currentchallenge.name;
-        challenge.avatarURL = req.body.avatarURL || currentchallenge.avatarURL;
-        challenge.game = req.body.game || currentchallenge.game;
-        challenge.type = req.body.type || currentchallenge.type;
-        challenge.goal = req.body.goal || currentchallenge.goal;
-        challenge.owner = req.body.creator || currentchallenge.creator;
+        challenge.trial = req.body.trial || currentChallenge.trial;
+        //challenge.goal = req.body.goal || currentChallenge.goal;
+        challenge.issuer = req.body.issuer || currentChallenge.issuer;
+        challenge.player = req.body.player || currentChallenge.player;
+        challenge.challengeStatus = req.body.challengeStatus || currentChallenge.challengeStatus;
         challenge.lastUpdated = rethinkdb.now();
         rethinkdb.table('challenges').get(challengeID).update(challenge, {returnChanges: true}).run(rethinkdb.conn, function(error, result) {
           if(error) {
