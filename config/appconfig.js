@@ -1,6 +1,6 @@
 module.exports = function() {
 
-  function _getEnvURL() {
+  function _getUIURL() {
     switch(process.env.RGN_API_ENV){
       case 'dev':
         return 'http://retrogamenight-dev.herokuapp.com';
@@ -13,7 +13,20 @@ module.exports = function() {
     }
   }
 
-  function _getApiPort() {
+  function _getAPIURL() {
+    switch(process.env.RGN_API_ENV){
+      case 'dev':
+        return 'http://45.55.13.64';
+
+      case 'prod':
+        return 'http://45.55.13.64';
+
+      default:
+        return 'http://localhost';
+    }
+  }
+
+  function _getAPIPort() {
     switch(process.env.RGN_API_ENV){
       case 'dev':
         return '';
@@ -50,20 +63,26 @@ module.exports = function() {
     },
     env: {
       type: (process.env.RGN_API_ENV || 'local'),
-      url: _getEnvURL(),
-      api_port: _getApiPort(),
-      ui_port: _getUIPort()
+      ui: {
+
+        url: _getUIURL(),
+        port: _getUIPort()
+      },
+      api: {
+        url: _getAPIURL(),
+        port: _getAPIPort()
+      }
     },
     auth: {
       google : {
         clientID      : '639156913273-35m8p1nqcgk812fri57dfk0ckiqo1qof.apps.googleusercontent.com',
         clientSecret  : '2EdJAN6HVFtiZbwBXJsISFo3',
-        callbackURL   : _getEnvURL() + _getApiPort() + '/auth/google/callback'
+        callbackURL   : _getAPIURL() + _getAPIPort() + '/auth/google/callback'
       },
       facebook : {
         clientID: '700311303428355',
         clientSecret: 'e2a83ed12208abc0faf76b6f839fb8a0',
-        callbackURL: _getEnvURL() + _getApiPort() + '/auth/facebook/callback'
+        callbackURL: _getAPIURL() + _getAPIPort() + '/auth/facebook/callback'
       }
     }
   }

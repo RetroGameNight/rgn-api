@@ -38,7 +38,7 @@ module.exports = function(app, appconfig, passport){
     passport.authenticate('google'),
     function(req, res) {
       //res.send(req.user);
-      res.redirect(appconfig.env.url + appconfig.env.ui_port);
+      res.redirect(appconfig.env.ui.url + appconfig.env.ui.port);
     });
 
   app.get('/auth/facebook',
@@ -57,6 +57,6 @@ module.exports = function(app, appconfig, passport){
     passport.authenticate('facebook'),
     function(req, res) {
       //res.send(req.user);
-      res.redirect(appconfig.env.url + appconfig.env.ui_port);
+      res.redirect(appconfig.env.ui.url + appconfig.env.ui.port);
     });
 }
