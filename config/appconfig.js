@@ -16,10 +16,10 @@ module.exports = function() {
   function _getAPIURL() {
     switch(process.env.RGN_API_ENV){
       case 'dev':
-        return 'http://45.55.13.64';
+        return 'http://api.retrogamenight.net';
 
       case 'prod':
-        return 'http://45.55.13.64';
+        return 'http://api.retrogamenight.net';
 
       default:
         return 'http://localhost';
@@ -29,10 +29,10 @@ module.exports = function() {
   function _getAPIPort() {
     switch(process.env.RGN_API_ENV){
       case 'dev':
-        return ':3000';
+        return '';
 
       case 'prod':
-        return ':3000';
+        return '';
 
       default:
         return ':3000';
