@@ -1,4 +1,4 @@
-module.exports = function(app, passport){
+module.exports = function(app, appconfig, passport){
   function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next(); }
     res.send('Not Authorized');
@@ -38,7 +38,7 @@ module.exports = function(app, passport){
     passport.authenticate('google'),
     function(req, res) {
       //res.send(req.user);
-      res.redirect('http://localhost:8081');
+      res.redirect(appconfig.env.url + appconfig.env.ui_port);
     });
 
   app.get('/auth/facebook',
@@ -57,6 +57,6 @@ module.exports = function(app, passport){
     passport.authenticate('facebook'),
     function(req, res) {
       //res.send(req.user);
-      res.redirect('http://localhost:8081');
+      res.redirect(appconfig.env.url + appconfig.env.ui_port);
     });
 }
