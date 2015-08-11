@@ -29,10 +29,10 @@ module.exports = function() {
   function _getAPIPort() {
     switch(process.env.RGN_API_ENV){
       case 'dev':
-        return '';
+        return ':3000';
 
       case 'prod':
-        return '';
+        return ':3000';
 
       default:
         return ':3000';
