@@ -1,3 +1,5 @@
+"use strict"
+
 var should = require('should'); 
 var assert = require('assert');
 var app = require('../app.bundle.js').app;
@@ -11,7 +13,7 @@ describe('Routing', function(){
     }, 500);
     
   });
-  var testUser = {};
+  var testEvent = {};
   describe('Events API Routing', function() {
 
     it('should create a new event with post', function(done) {
