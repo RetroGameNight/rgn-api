@@ -1,20 +1,34 @@
 # rgn-api
 API for the RGN website.
 
-Setup:
+## Setup
 
-Install rethinkdb
+* Install rethinkdb
 
-$ brew install rethinkdb
+```
+brew install rethinkdb
+```
 
-Start database
+* Start database
 
-$ rethinkdb
+```
+rethinkdb
+```
 
-Run app
+* Install dependencies
 
-$ nodemon app.js
+```
+npm install
+```
 
-Test app
+* Run app
 
-$ mocha
+```
+npm start
+```
+
+## Testing
+
+```
+npm test
+```
