@@ -1,17 +1,17 @@
-module.exports = function(app, passport){
+export default (app, passport) => {
   function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) { return next(); }
-    res.send('Not Authorized');
+    if (req.isAuthenticated()) { return next() }
+    res.send('Not Authorized')
   }
 
-  app.get('/logged-in', ensureAuthenticated, function(req, res){
-    res.send(req.user);
-  });
+  app.get('/logged-in', ensureAuthenticated, (req, res) => {
+    res.send(req.user)
+  })
 
-  app.get('/logout', function(req, res){
-    req.logout();
-    res.send('Logged Out');
-  });
+  app.get('/logout', (req, res) => {
+    req.logout()
+    res.send('Logged Out')
+  })
 
   /*app.get('/login', function(req, res){
     res.render('login', { user: req.user });
@@ -24,10 +24,10 @@ module.exports = function(app, passport){
   //   will redirect the user back to this application at /auth/google/callback
   app.get('/auth/google',
     passport.authenticate('google', { scope: ['https://www.googleapis.com/auth/plus.login','email'] }),
-    function(req, res){
+    (req, res) => {
       // The request will be redirected to Google for authentication, so this
       // function will not be called.
-    });
+    })
 
   // GET /auth/google/callback
   //   Use passport.authenticate() as route middleware to authenticate the
@@ -36,17 +36,17 @@ module.exports = function(app, passport){
   //   which, in this example, will redirect the user to the home page.
   app.get('/auth/google/callback', 
     passport.authenticate('google'),
-    function(req, res) {
+    (req, res) => {
       //res.send(req.user);
-      res.redirect('http://localhost:8081');
-    });
+      res.redirect('http://localhost:8081')
+    })
 
   app.get('/auth/facebook',
     passport.authenticate('facebook', {scope: 'email'}),
-    function(req, res){
+    (req, res) => {
       // The request will be redirected to facebook for authentication, so this
       // function will not be called.
-    });
+    })
 
   // GET /auth/facebook/callback
   //   Use passport.authenticate() as route middleware to authenticate the
@@ -55,8 +55,8 @@ module.exports = function(app, passport){
   //   which, in this example, will redirect the user to the home page.
   app.get('/auth/facebook/callback', 
     passport.authenticate('facebook'),
-    function(req, res) {
+    (req, res) => {
       //res.send(req.user);
-      res.redirect('http://localhost:8081');
-    });
+      res.redirect('http://localhost:8081')
+    })
 }
