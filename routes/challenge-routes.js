@@ -75,7 +75,7 @@ module.exports = function (app, rethinkdb) {
         next();
       }
       else {
-        currentchallenge = result;
+        currentChallenge = result;
         challenge.trial = req.body.trial || currentChallenge.trial;
         //challenge.goal = req.body.goal || currentChallenge.goal;
         challenge.issuer = req.body.issuer || currentChallenge.issuer;
