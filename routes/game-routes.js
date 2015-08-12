@@ -1,3 +1,5 @@
+import appconfig from '../config/appconfig'
+
 export default (app, rethinkdb) => {
   app.route('/games/all')
     .get(listGames)           // List all games
@@ -13,7 +15,8 @@ export default (app, rethinkdb) => {
     .get(getTrialsForGame)             // Get a specific game
 
   function listGames(req, res, next) {
-      rethinkdb.table('games').orderBy({index: "createdAt"}).run(rethinkdb.conn, (error, cursor) => {
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('games').orderBy({index: "createdAt"}).run(conn, (error, cursor) => {
           if (error) {
               handleError(res, error) 
               next()
@@ -31,16 +34,19 @@ export default (app, rethinkdb) => {
               })
           }
       })
+    })
   }
 
   function getGame(req, res, next) {
     const gameID = req.params.id
-    rethinkdb.table('games').get(gameID).run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        handleError(res, error) 
-        next()
-      }
-      res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('games').get(gameID).run(conn, (error, result) => {
+        if(error) {
+          handleError(res, error) 
+          next()
+        }
+        res.json(result)
+      })
     })
   }
 
@@ -51,18 +57,20 @@ export default (app, rethinkdb) => {
       game.avatarURL = req.body.avatarURL || ""
       game.createdAt = rethinkdb.now()
       game.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.table('games').insert(game, {returnChanges: true}).run(rethinkdb.conn, (error, result) => {
-          if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-              next()
-          }
-          else {
-              res.json(result.changes[0].new_val)
-          }
+      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+        rethinkdb.table('games').insert(game, {returnChanges: true}).run(conn, (error, result) => {
+            if (error) {
+                handleError(res, error) 
+                next()
+            }
+            else if (result.inserted !== 1) {
+                handleError(res, new Error("Document was not inserted."))
+                next()
+            }
+            else {
+                res.json(result.changes[0].new_val)
+            }
+        })
       })
   }
 
@@ -70,28 +78,32 @@ export default (app, rethinkdb) => {
     const gameID = req.params.id
     const game = {}
     let currentgame = {}
-    rethinkdb.table('games').get(gameID).run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        handleError(res, error) 
-        next()
-      }
-      else {
-        currentgame = result
-        game.name = req.body.name || currentgame.name
-        game.avatarURL = req.body.avatarURL || currentgame.avatarURL
-        game.system = req.body.system || currentgame.system         // req.body was created by `bodyParser`
-        game.lastUpdated = rethinkdb.now()
-        rethinkdb.table('games').get(gameID).update(game, {returnChanges: true}).run(rethinkdb.conn, (error, result) => {
-          if(error) {
-            //handleError(res, error) 
-            throw error
-            next()
-          }
-          else {
-            res.json(result.changes[0].new_val)
-          }
-        })
-      }
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('games').get(gameID).run(conn, (error, result) => {
+        if(error) {
+          handleError(res, error) 
+          next()
+        }
+        else {
+          currentgame = result
+          game.name = req.body.name || currentgame.name
+          game.avatarURL = req.body.avatarURL || currentgame.avatarURL
+          game.system = req.body.system || currentgame.system         // req.body was created by `bodyParser`
+          game.lastUpdated = rethinkdb.now()
+          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+            rethinkdb.table('games').get(gameID).update(game, {returnChanges: true}).run(conn, (error, result) => {
+              if(error) {
+                //handleError(res, error) 
+                throw error
+                next()
+              }
+              else {
+                res.json(result.changes[0].new_val)
+              }
+            })
+          })
+        }
+      })
     })
   }
 
@@ -101,36 +113,40 @@ export default (app, rethinkdb) => {
   function deleteGame(req, res, next) {
     const gameID = req.params.id
 
-    rethinkdb.table('games').get(gameID).delete().run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        handleError(res, error) 
-        next()
-      }
-      else {
-        res.json({success: true})
-      }
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('games').get(gameID).delete().run(conn, (error, result) => {
+        if(error) {
+          handleError(res, error) 
+          next()
+        }
+        else {
+          res.json({success: true})
+        }
+      })
     })
   }
 
   function getTrialsForGame(req, res, next){
     const gameID = req.params.id
-    rethinkdb.table('trials').filter({'game':gameID}).run(rethinkdb.conn, (error, cursor) => {
-      if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray((error, result) => {
-                  if (error) {
-                      handleError(res, error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('trials').filter({'game':gameID}).run(conn, (error, cursor) => {
+        if (error) {
+                handleError(res, error) 
+                next()
+            }
+            else {
+                // Retrieve all the todos in an array
+                cursor.toArray((error, result) => {
+                    if (error) {
+                        handleError(res, error) 
+                    }
+                    else {
+                        // Send back the data
+                        res.json(result)
+                    }
+                })
+            }
+      })
     })
   }
 }

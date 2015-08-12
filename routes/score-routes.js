@@ -1,3 +1,5 @@
+import appconfig from '../config/appconfig'
+
 export default (app, rethinkdb) => {
   app.route('/scores/latest')
     .get(listRecentScores)
@@ -12,7 +14,8 @@ export default (app, rethinkdb) => {
     .delete(deleteScore)       // Delete a specific score
 
   function listScores(req, res, next) {
-      rethinkdb.table('scores').orderBy({index: "lastUpdated"}).run(rethinkdb.conn, (error, cursor) => {
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('scores').orderBy({index: "lastUpdated"}).run(conn, (error, cursor) => {
           if (error) {
               res.send(error) 
               next()
@@ -30,37 +33,42 @@ export default (app, rethinkdb) => {
               })
           }
       })
+    })
   }
   function listRecentScores(req, res, next) {
       const numScores = parseInt(req.query.scores) || 10
-      rethinkdb.table('scores').orderBy({index: "lastUpdated"}).limit(numScores).run(rethinkdb.conn, (error, cursor) => {
-          if (error) {
-              res.send(error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray((error, result) => {
-                  if (error) {
-                      res.send(error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+        rethinkdb.table('scores').orderBy({index: "lastUpdated"}).limit(numScores).run(conn, (error, cursor) => {
+            if (error) {
+                res.send(error) 
+                next()
+            }
+            else {
+                // Retrieve all the todos in an array
+                cursor.toArray((error, result) => {
+                    if (error) {
+                        res.send(error) 
+                    }
+                    else {
+                        // Send back the data
+                        res.json(result)
+                    }
+                })
+            }
+        })
       })
   }
 
   function getScore(req, res, next) {
     const scoreID = req.params.id
-    rethinkdb.table('scores').get(scoreID).run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        res.send(error) 
-        next()
-      }
-      res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('scores').get(scoreID).run(conn, (error, result) => {
+        if(error) {
+          res.send(error) 
+          next()
+        }
+        res.json(result)
+      })
     })
   }
 
@@ -74,18 +82,20 @@ export default (app, rethinkdb) => {
       score.result = req.body.score || ''
       score.createdAt = rethinkdb.now()
       score.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.table('scores').insert(score, {returnChanges: true}).run(rethinkdb.conn, (error, result) => {
-          if (error) {
-              res.send(error) 
-              next()
-          }
-          else if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-              next()
-          }
-          else {
-              res.json(result.changes[0].new_val)
-          }
+      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+        rethinkdb.table('scores').insert(score, {returnChanges: true}).run(conn, (error, result) => {
+            if (error) {
+                res.send(error) 
+                next()
+            }
+            else if (result.inserted !== 1) {
+                handleError(res, new Error("Document was not inserted."))
+                next()
+            }
+            else {
+                res.json(result.changes[0].new_val)
+            }
+        })
       })
   }
 
@@ -93,31 +103,35 @@ export default (app, rethinkdb) => {
     const scoreID = req.params.id
     const score = {}
     let currentScore = {}
-    rethinkdb.table('scores').get(scoreID).run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        res.send(error) 
-        next()
-      }
-      else {
-        currentScore = result
-        score.user = req.body.user || currentScore.user
-        score.issuer = req.body.issuer || currentScore.issuer
-        score.player = req.body.player || currentScore.player
-        score.challenge = req.body.challenge || currentScore.challenge
-        score.status = req.body.status || currentScore.status
-        score.result = req.body.result || currentScore.result
-        score.lastUpdated = rethinkdb.now()
-        rethinkdb.table('scores').get(scoreID).update(score, {returnChanges: true}).run(rethinkdb.conn, (error, result) => {
-          if(error) {
-            //res.send(error) 
-            throw error
-            next()
-          }
-          else {
-            res.json(result.changes[0].new_val)
-          }
-        })
-      }
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('scores').get(scoreID).run(conn, (error, result) => {
+        if(error) {
+          res.send(error) 
+          next()
+        }
+        else {
+          currentScore = result
+          score.user = req.body.user || currentScore.user
+          score.issuer = req.body.issuer || currentScore.issuer
+          score.player = req.body.player || currentScore.player
+          score.challenge = req.body.challenge || currentScore.challenge
+          score.status = req.body.status || currentScore.status
+          score.result = req.body.result || currentScore.result
+          score.lastUpdated = rethinkdb.now()
+          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+            rethinkdb.table('scores').get(scoreID).update(score, {returnChanges: true}).run(conn, (error, result) => {
+              if(error) {
+                //res.send(error) 
+                throw error
+                next()
+              }
+              else {
+                res.json(result.changes[0].new_val)
+              }
+            })
+          })
+        }
+      })
     })
   }
 
@@ -127,14 +141,16 @@ export default (app, rethinkdb) => {
   function deleteScore(req, res, next) {
     const scoreID = req.params.id
 
-    rethinkdb.table('scores').get(scoreID).delete().run(rethinkdb.conn, (error, result) => {
-      if(error) {
-        res.send(error) 
-        next()
-      }
-      else {
-        res.json({success: true})
-      }
+    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+      rethinkdb.table('scores').get(scoreID).delete().run(conn, (error, result) => {
+        if(error) {
+          res.send(error) 
+          next()
+        }
+        else {
+          res.json({success: true})
+        }
+      })
     })
   }
 }
