@@ -1,8 +1,8 @@
-var rethinkdb = require('rethinkdb');
+import rethinkdb from 'rethinkdb'
 require('rethinkdb-init')(rethinkdb);
-var appconfig = require('./config/appconfig');
+import appconfig from './config/appconfig'
 
-rethinkdb.connections = [];
+rethinkdb.connections = []
 /*rethinkdb.getNewConnection = function () {
   return rethinkdb.connect(appconfig.rethinkdb)
     .then(function (conn) {
@@ -15,32 +15,32 @@ rethinkdb.connections = [];
 rethinkdb.init(appconfig.rethinkdb, [
   {
     name: 'users',
-    indexes: ['createdAt','email']
+    indexes: ['createdAt','email'],
   },
   {
     name: 'events',
-    indexes: ['startTime']
+    indexes: ['startTime'],
   },
   {
     name: 'games',
-    indexes: ['createdAt']
+    indexes: ['createdAt'],
   },
   {
     name: 'trials',
-    indexes: ['createdAt','game']
+    indexes: ['createdAt','game'],
   },
   {
     name: 'challenges',
-    indexes: ['createdAt','game']
+    indexes: ['createdAt','game'],
   },
   {
     name: 'scores',
-    indexes: ['lastUpdated','challenge']
-  } 
-]).then(function (conn) {
-  rethinkdb.conn = conn;
-  rethinkdb.connections.push(conn);
-  rethinkdb.conn.use(appconfig.rethinkdb.db);
-});
+    indexes: ['lastUpdated','challenge'],
+  },
+]).then(conn => {
+  rethinkdb.conn = conn
+  rethinkdb.connections.push(conn)
+  rethinkdb.conn.use(appconfig.rethinkdb.db)
+})
 
-module.exports = rethinkdb;
+module.exports = rethinkdb
