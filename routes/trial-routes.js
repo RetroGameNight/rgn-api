@@ -1,5 +1,9 @@
 import appconfig from '../config/appconfig'
 
+function handleError(res, error) {
+  console.log("res", res, "error", error)
+}
+
 export default (app, rethinkdb) => {
   app.route('/trials/all')
     .get(listTrials)           // List all Trials
