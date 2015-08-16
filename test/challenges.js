@@ -1,3 +1,11 @@
+/*
+ * Retro Game Night
+ * Copyright (c) 2015 Andrew Reder, Cameron White, Chris Loeper
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+ 
 var should = require('should'); 
 var assert = require('assert');
 var app = require('../app.bundle.js').app;
