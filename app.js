@@ -24,7 +24,7 @@ import { Strategy as FacebookStrategy } from 'passport-facebook'
 // Initialize Express App
 const app = express()
 const allowCrossDomain = (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:8081')
+    res.header('Access-Control-Allow-Origin', appconfig.env.ui.url + appconfig.env.ui.port)
     res.header('Access-Control-Allow-Credentials', true)
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With')
@@ -58,7 +58,7 @@ app.use(passport.session())
 require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport)
 
 // Load in authentication routes
-require('./routes/auth-routes')(app, passport)
+require('./routes/auth-routes')(app, appconfig, passport)
 require('./routes/user-routes')(app, rethinkdb)
 require('./routes/event-routes')(app, rethinkdb)
 require('./routes/game-routes')(app, rethinkdb)
