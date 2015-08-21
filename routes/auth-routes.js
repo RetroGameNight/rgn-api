@@ -6,7 +6,7 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
  
-export default (app, passport) => {
+export default (app, appconfig, passport) => {
   function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) { return next() }
     res.send('Not Authorized')
@@ -46,7 +46,7 @@ export default (app, passport) => {
     passport.authenticate('google'),
     (req, res) => {
       //res.send(req.user);
-      res.redirect('http://localhost:8081')
+      res.redirect(appconfig.env.ui.url + appconfig.env.ui.port)
     })
 
   app.get('/auth/facebook',
@@ -65,6 +65,6 @@ export default (app, passport) => {
     passport.authenticate('facebook'),
     (req, res) => {
       //res.send(req.user);
-      res.redirect('http://localhost:8081')
+      res.redirect(appconfig.env.ui.url + appconfig.env.ui.port)
     })
 }
