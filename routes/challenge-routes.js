@@ -25,42 +25,39 @@ export default (app, rethinkdb) => {
     .delete(deleteChallenge)       // Delete a specific challenge
 
   function listChallenges(req, res, next) {
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('challenges').orderBy({index: "createdAt"}).run(conn, (error, cursor) => {
-          if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray((error, result) => {
-                  if (error) {
-                      handleError(res, error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('challenges')
+          .orderBy({index: "createdAt"})
+          .run(connection)
       })
-    })
+      .then(cursor => cursor.toArray())
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function getChallenge(req, res, next) {
+    let connection = null
     const challengeID = req.params.id;
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('challenges').get(challengeID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('challenges')
+          .get(challengeID)
+          .run(conn)
       })
-    })
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function createChallenge(req, res, next) {
+      let connection = null
       const challenge = {}
       challenge.trial = req.body.trial || "Unnamed Trial"
       //challenge.goal = req.body.goal || "10000"
@@ -69,56 +66,56 @@ export default (app, rethinkdb) => {
       challenge.challengeStatus = req.body.challengeStatus || "Pending"
       challenge.createdAt = rethinkdb.now()
       challenge.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-        rethinkdb.table('challenges').insert(challenge, {returnChanges: true}).run(conn, (error, result) => {
-            if (error) {
-                handleError(res, error) 
-                next()
-            }
-            else if (result.inserted !== 1) {
-                handleError(res, new Error("Document was not inserted."))
-                next()
-            }
-            else {
-                res.json(result.changes[0].new_val)
-            }
+      rethinkdb.connect(appconfig.rethinkdb)
+        .then(conn => {
+          connection = conn
+          return rethinkdb
+            .table('challenges')
+            .insert(challenge, {returnChanges: true})
+            .run(connection)
         })
-      })
+        .then(result => {
+          if (result.inserted !== 1) {
+              handleError(res, new Error("Document was not inserted."))
+          } else {
+              return res.json(result.changes[0].new_val)
+          }
+        })
+        .then(() => connection.close())
+        .error(error => handleError(res, error))
   }
 
   function updateChallenge(req, res, next) {
     const challengeID = req.params.id
-    const challenge = {}
-    let currentChallenge = {}
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('challenges').get(challengeID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          currentChallenge = result
-          challenge.trial = req.body.trial || currentChallenge.trial
-          //challenge.goal = req.body.goal || currentChallenge.goal
-          challenge.issuer = req.body.issuer || currentChallenge.issuer
-          challenge.player = req.body.player || currentChallenge.player
-          challenge.challengeStatus = req.body.challengeStatus || currentChallenge.challengeStatus
-          challenge.lastUpdated = rethinkdb.now()
-          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-            rethinkdb.table('challenges').get(challengeID).update(challenge, {returnChanges: true}).run(conn, (error, result) => {
-              if(error) {
-                //handleError(res, error) 
-                throw error
-                next()
-              }
-              else {
-                res.json(result.changes[0].new_val)
-              }
-            })
-          })
-        }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('challenges')
+          .get(challengeID)
+          .run(connection)
       })
-    })
+      .then(result => {
+        const challenge = {}
+        const currentChallenge = result
+        challenge.trial = req.body.trial || currentChallenge.trial
+        //challenge.goal = req.body.goal || currentChallenge.goal
+        challenge.issuer = req.body.issuer || currentChallenge.issuer
+        challenge.player = req.body.player || currentChallenge.player
+        challenge.challengeStatus = req.body.challengeStatus || currentChallenge.challengeStatus
+        challenge.lastUpdated = rethinkdb.now()
+        return challenge
+      })
+      .then(challenge => rethinkdb
+        .table('challenges')
+        .get(challengeID)
+        .update(challenge, {returnChanges: true})
+        .run(connection)
+      )
+      .then(result => res.json(result.changes[0].new_val))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   /*
@@ -126,17 +123,18 @@ export default (app, rethinkdb) => {
    */
   function deleteChallenge(req, res, next) {
     const challengeID = req.params.id
-
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('challenges').get(challengeID).delete().run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          res.json({success: true})
-        }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('challenges')
+          .get(challengeID)
+          .delete()
+          .run(connection)
       })
-    })
+      .then(() => res.json({success: true}))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 }
