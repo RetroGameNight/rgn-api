@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./app.bundle",
+    "start": "nodemon ./app.bundle.js",
     "postinstall": "webpack",
     "pretest": "npm install",
     "test": "mocha"
