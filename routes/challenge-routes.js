@@ -3,7 +3,7 @@
 import appconfig from '../config/appconfig'
 
 function handleError(res, error) {
-  console.log("res", res, "error", error)
+  console.log("error", error)
 }
 
 export default (app, rethinkdb) => {

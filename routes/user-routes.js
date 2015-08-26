@@ -1,7 +1,7 @@
 import appconfig from '../config/appconfig'
 
 function handleError(res, error) {
-  console.log("res", res, "error", error)
+  console.log("error", error)
 }
 
 module.exports = function (app, rethinkdb) {

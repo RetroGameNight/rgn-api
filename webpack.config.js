@@ -3,6 +3,7 @@
 var webpack = require('webpack');
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs')
+var _ = require('lodash')
 
 var DEBUG = !argv.release;
 
@@ -15,11 +16,9 @@ fs.readdirSync('node_modules')
     nodeModules[mod] = 'commonjs ' + mod;
   });
 
-module.exports = {
-  entry: './app.js',
+var config = {
   target: 'node',
   output: {
-    filename: 'app.bundle.js',
     publicPath: './',
     sourcePrefix: '  ',
     libraryTarget: "commonjs2"
@@ -66,3 +65,19 @@ module.exports = {
     ]
   }
 };
+
+var appConfig = _.merge({}, config, {
+  entry: './app.js',
+  output: {
+    filename: 'app.bundle.js',
+  }
+});
+
+var dbConfig = _.merge({}, config, {
+  entry: './db.js',
+  output: {
+    filename: 'db.bundle.js',
+  }
+});
+
+module.exports = [appConfig, dbConfig];

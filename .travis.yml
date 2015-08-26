@@ -9,7 +9,7 @@ before_install:
     - rethinkdb --version
 before_script:
   - rethinkdb --no-http-admin &
-  - sleep 30
+  - node db.bundle.js
 script:
   - mocha
 notifications:
