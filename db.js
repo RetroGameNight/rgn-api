@@ -7,7 +7,6 @@
  */
  
 import rethinkdb from 'rethinkdb'
-require('rethinkdb-init')(rethinkdb);
 import appconfig from './config/appconfig'
 
 rethinkdb.connections = []
@@ -20,7 +19,7 @@ rethinkdb.connections = []
     });
 };*/
 
-rethinkdb.init(appconfig.rethinkdb, [
+rethinkdbInit([
   {
     name: 'users',
     indexes: ['createdAt','email'],
@@ -45,10 +44,33 @@ rethinkdb.init(appconfig.rethinkdb, [
     name: 'scores',
     indexes: ['lastUpdated','challenge'],
   },
-]).then(conn => {
-  rethinkdb.conn = conn
-  rethinkdb.connections.push(conn)
-  rethinkdb.conn.use(appconfig.rethinkdb.db)
-})
+])
 
-module.exports = rethinkdb
+
+function rethinkdbInit(tables) {
+  let connection = null
+  let promise = rethinkdb.connect(appconfig.rethinkdb)
+  promise = promise
+    .then(conn => connection = conn )
+    .then(result => {
+      return rethinkdb.dbCreate(appconfig.rethinkdb.db).run(connection)
+    })
+  tables.forEach(eachTable => {
+    promise = promise
+      .then(result => rethinkdb
+          .db(appconfig.rethinkdb.db)
+          .tableCreate(eachTable.name)
+          .run(connection)
+      )
+    eachTable.indexes.forEach(eachIndex => {
+      promise = promise
+        .then(result => rethinkdb
+            .table(eachTable.name)
+            .indexCreate(eachIndex)
+            .run(connection)
+        )
+    })
+  })
+  promise = promise.then(result => connection.close())
+  promise = promise.error(error => console.log(error))
+}

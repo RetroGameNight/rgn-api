@@ -7,6 +7,7 @@
  */
 
 import express from 'express'
+import rethinkdb from 'rethinkdb'
 
 import appconfig from './config/appconfig'
 import path from 'path'
@@ -16,7 +17,6 @@ import bodyParser from 'body-parser'
 import session from 'express-session'
 import methodOverride from 'method-override'
 
-import rethinkdb from './db'
 import passport from 'passport'
 import { OAuth2Strategy as GoogleStrategy } from 'passport-google-oauth'
 import { Strategy as FacebookStrategy } from 'passport-facebook'

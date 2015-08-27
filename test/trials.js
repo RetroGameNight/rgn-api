@@ -6,6 +6,8 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
  
+"use strict"
+
 var should = require('should'); 
 var assert = require('assert');
 var app = require('../app.bundle.js').app;
