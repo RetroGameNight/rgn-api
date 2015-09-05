@@ -57,9 +57,9 @@ export default (FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport
                 })    
               })
             })
-            /*.catch(err => {
+            .catch(err => {
               console.log('Error Getting User', err)
-            })*/
+            })
           }
         }
       
