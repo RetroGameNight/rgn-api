@@ -5,6 +5,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
+import appconfig from './config/appconfig'
 
 export default (FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport) => {
   const GOOGLE_CLIENT_ID = appconfig.auth.google.clientID
@@ -30,35 +31,38 @@ export default (FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport
   const loginCallbackHandler = (objectMapper, type) => 
     (accessToken, refreshToken, profile, done) => {
       if (accessToken !== null) {
-        rethinkdb
-          .table('users')
-          .getAll(profile.emails[0].value, { index: 'email' })
-          //.filter({ type: type })
-          .run(rethinkdb.conn)
-          .then(cursor => {
-            return cursor.toArray()
-              .then(users => {
-                if (users.length > 0) {
-                  return done(null, users[0])
-                }
-                return rethinkdb.table('users')
-                  .insert(objectMapper(profile))
-                  .run(rethinkdb.conn)
-                  .then(response => {
-                    return rethinkdb.table('users')
-                      .get(response.generated_keys[0])
-                      .run(rethinkdb.conn)
-                  })
-                  .then(newUser => {
-                    done(null, newUser)
-                  })
+        rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
+          rethinkdb
+            .table('users')
+            .getAll(profile.emails[0].value, { index: 'email' })
+            //.filter({ type: type })
+            .run(conn)
+            .then(cursor => {
+              return cursor.toArray()
+                .then(users => {
+                  if (users.length > 0) {
+                    return done(null, users[0])
+                  }
+                  return rethinkdb.table('users')
+                    .insert(objectMapper(profile))
+                    .run(conn)
+                    .then(response => {
+                      return rethinkdb.table('users')
+                        .get(response.generated_keys[0])
+                        .run(rethinkdb.conn)
+                        .then(newUser => {
+                          return done(null, newUser)
+                        })
+                    })
+                })    
               })
-          })
-          .catch(err => {
-            console.log('Error Getting User', err)
-          })
+            })
+            /*.catch(err => {
+              console.log('Error Getting User', err)
+            })*/
+          }
         }
-      }
+      
   // Use the GoogleStrategy within Passport.
   //   Strategies in Passport require a `verify` function, which accept
   //   credentials (in this case, an accessToken, refreshToken, and Google
