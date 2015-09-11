@@ -24,116 +24,114 @@ module.exports = function (app, rethinkdb) {
     .delete(deleteUser)       // Delete a specific user
 
   function listUsers(req, res, next) {
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('users').orderBy({index: "createdAt"}).run(conn, (error, cursor) => {
-          if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray((error, result) => {
-                  if (error) {
-                      handleError(res, error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('users')
+          .orderBy({index: "createdAt"})
+          .run(connection)
       })
-    })
+      .then(cursor => cursor.toArray())
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function getUser(req, res, next) {
+    let connection = null
     const userID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('users').get(userID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('users')
+          .get(userID)
+          .run(conn)
       })
-    })
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function createUser(req, res, next) {
-      const user = {}
-      user.name = req.body.name || "Anonymous"
-      user.email = req.body.email || "Anonymous"
-      user.avatarURL = req.body.avatarURL || ""
-      user.type = req.body.type || "other"         // req.body was created by `bodyParser`
-      user.createdAt = rethinkdb.now()
-      user.lastUpdated = rethinkdb.now()    // Set the field `createdAt` to the current time
-      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-        rethinkdb.table('users').insert(user, {returnChanges: true}).run(conn, (error, result) => {
-            if (error) {
-                handleError(res, error) 
-                next()
-            }
-            else if (result.inserted !== 1) {
-                handleError(res, new Error("Document was not inserted."))
-                next()
-            }
-            else {
-                res.json(result.changes[0].new_val)
-            }
-        })
+    let connection = null
+    const user = {}
+    user.name = req.body.name || "Anonymous"
+    user.email = req.body.email || "Anonymous"
+    user.avatarURL = req.body.avatarURL || ""
+    user.type = req.body.type || "other"         // req.body was created by `bodyParser`
+    user.createdAt = rethinkdb.now()
+    user.lastUpdated = rethinkdb.now()    // Set the field `createdAt` to the current time
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('users')
+          .insert(user, {returnChanges: true})
+          .run(connection)
       })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateUser(req, res, next) {
     const userID = req.params.id
-    const user = {}
-    let currentUser = {}
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('users').get(userID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          currentUser = result
-          user.name = req.body.name || currentUser.name
-          user.email = req.body.email || currentUser.email
-          user.avatarURL = req.body.avatarURL || currentUser.avatarURL
-          user.type = req.body.type || currentUser.type         // req.body was created by `bodyParser`
-          user.lastUpdated = rethinkdb.now()
-          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-            rethinkdb.table('users').get(userID).update(user, {returnChanges: true}).run(conn, (error, result) => {
-              if(error) {
-                //handleError(res, error) 
-                throw error
-                next()
-              }
-              else {
-                res.json(result.changes[0].new_val)
-              }
-            })
-          })
-        }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('users')
+          .get(userID)
+          .run(connection)
       })
-    })
+      .then(result => {
+        const user = {}
+        const currentUser = result
+        user.name = req.body.name || currentUser.name
+        user.email = req.body.email || currentUser.email
+        user.avatarURL = req.body.avatarURL || currentUser.avatarURL
+        user.type = req.body.type || currentUser.type         // req.body was created by `bodyParser`
+        user.lastUpdated = rethinkdb.now()
+        return user
+      })
+      .then(user => rethinkdb
+        .table('users')
+        .get(userID)
+        .update(user, {returnChanges: true})
+        .run(connection)
+      )
+      .then(result => res.json(result.changes[0].new_val))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   /*
    * Delete a todo item.
    */
   function deleteUser(req, res, next) {
+    let connection = null
     const userID = req.params.id
-
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('users').get(userID).delete().run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          res.json({success: true})
-        }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('users')
+          .get(userID)
+          .delete()
+          .run(connection)
       })
-    })
+      .then(() => res.json({success: true}))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 }
