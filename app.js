@@ -8,6 +8,7 @@
 
 import express from 'express'
 import rethinkdb from 'rethinkdb'
+import swagger from "swagger-node-express"
 
 import appconfig from './config/appconfig'
 import path from 'path'
@@ -51,6 +52,9 @@ app.use(session({
   saveUninitialized: true,
 }))
 
+// Couple the application to the Swagger module. 
+swagger.setAppHandler(app);
+
 // Initialize Passport!  Also use passport.session() middleware, to support
 // persistent login sessions (recommended).
 app.use(passport.initialize())
@@ -59,12 +63,15 @@ require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passpo
 
 // Load in authentication routes
 require('./routes/auth-routes')(app, appconfig, passport)
-require('./routes/user-routes')(app, rethinkdb)
-require('./routes/event-routes')(app, rethinkdb)
-require('./routes/game-routes')(app, rethinkdb)
-require('./routes/challenge-routes')(app, rethinkdb)
-require('./routes/trial-routes')(app, rethinkdb)
-require('./routes/score-routes')(app, rethinkdb)
+require('./routes/user-routes')(swagger, rethinkdb)
+require('./routes/event-routes')(swagger, rethinkdb)
+require('./routes/game-routes')(swagger, rethinkdb)
+require('./routes/challenge-routes')(swagger, rethinkdb)
+require('./routes/trial-routes')(swagger, rethinkdb)
+require('./routes/score-routes')(swagger, rethinkdb)
+
+swagger.configure("http://localhost:3000", "0.1");
+
 // Start server
 app.listen(3000)
 module.exports.app = app;

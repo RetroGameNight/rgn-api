@@ -13,18 +13,102 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-export default (app, rethinkdb) => {
-  app.route('/challenges/all')
-    .get(listChallenges)           // List all challenges
-  app.route('/challenges/new')
-    .post(createChallenge)         // Create a new challenge
-    .get(createChallenge)
-  app.route('/challenges/:id')
-    .get(getChallenge)             // Get a specific challenge
-    .put(updateChallenge)          // Update a specific challenge
-    .delete(deleteChallenge)       // Delete a specific challenge
+export default (swagger, rethinkdb) => {
 
-  function listChallenges(req, res, next) {
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about challenges",
+      "path" : "/challenges/all",
+      "notes" : "Returns a array of challenge objects",
+      "summary" : "List challenges",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "Challenge",
+      "errorResponses" : [],
+      "nickname" : "listChallenges",
+    },
+    'action': listChallenges,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about challenges",
+      "path" : "/challenges/{id}",
+      "notes" : "Returns a challenge object",
+      "summary" : "Get challenge by id",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of challange that needs to be fetched", 
+          "string"
+        ),
+      ],
+      "type" : "Challenge",
+      "errorResponses" : [],
+      "nickname" : "getChallenge",
+    },
+    'action': getChallenge,
+  })
+
+  swagger.addPost({
+    'spec': {
+      "description" : "Operations about challenges",
+      "path" : "/challenges/new",
+      "notes" : "Returns a new challenge object",
+      "summary" : "Create a new challenge",
+      "method": "POST",
+      "parameters" : [],
+      "type" : "Challenge",
+      "errorResponses" : [],
+      "nickname" : "createChallenge",
+    },
+    'action': createChallenge,
+  })
+
+  swagger.addPut({
+    'spec': {
+      "description" : "Operations about challenges",
+      "path" : "/challenges/{id}",
+      "notes" : "Returns the updated challenge object",
+      "summary" : "Update a challenges",
+      "method": "PUT",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of challange that needs to be updated", 
+          "string"
+        ),
+      ],
+      "type" : "Challenge",
+      "errorResponses" : [],
+      "nickname" : "updateChallenge",
+    },
+    'action': updateChallenge,
+  })
+
+  swagger.addDelete({
+    'spec': {
+      "description" : "Operations about challenges",
+      "path" : "/challenges/{id}",
+      "notes" : "Returns a status object",
+      "summary" : "Deletes a challenge",
+      "method": "DELETE",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of challange that needs to be deleted", 
+          "string"
+        ),
+      ],
+      "type" : "Challenge",
+      "errorResponses" : [],
+      "nickname" : "deleteChallenge",
+    },
+    'action': deleteChallenge,
+  })
+
+  function listChallenges(req,res) {
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
@@ -37,10 +121,10 @@ export default (app, rethinkdb) => {
       .then(cursor => cursor.toArray())
       .then(result => res.json(result))
       .then(() => connection.close())
-      .error(error => handleError(res, error))
+    .error(error => handleError(res, error))
   }
 
-  function getChallenge(req, res, next) {
+  function getChallenge(req, res) {
     let connection = null
     const challengeID = req.params.id;
     rethinkdb.connect(appconfig.rethinkdb)
@@ -56,36 +140,36 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function createChallenge(req, res, next) {
-      let connection = null
-      const challenge = {}
-      challenge.trial = req.body.trial || "Unnamed Trial"
-      //challenge.goal = req.body.goal || "10000"
-      challenge.issuer = req.body.issuer || "Anonymous"
-      challenge.player = req.body.player || "Anonymous"
-      challenge.challengeStatus = req.body.challengeStatus || "Pending"
-      challenge.createdAt = rethinkdb.now()
-      challenge.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.connect(appconfig.rethinkdb)
-        .then(conn => {
-          connection = conn
-          return rethinkdb
-            .table('challenges')
-            .insert(challenge, {returnChanges: true})
-            .run(connection)
-        })
-        .then(result => {
-          if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-          } else {
-              return res.json(result.changes[0].new_val)
-          }
-        })
-        .then(() => connection.close())
-        .error(error => handleError(res, error))
+  function createChallenge(req, res) {
+    let connection = null
+    const challenge = {}
+    challenge.trial = req.body.trial || "Unnamed Trial"
+    //challenge.goal = req.body.goal || "10000"
+    challenge.issuer = req.body.issuer || "Anonymous"
+    challenge.player = req.body.player || "Anonymous"
+    challenge.challengeStatus = req.body.challengeStatus || "Pending"
+    challenge.createdAt = rethinkdb.now()
+    challenge.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('challenges')
+          .insert(challenge, {returnChanges: true})
+          .run(connection)
+      })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
-  function updateChallenge(req, res, next) {
+  function updateChallenge(req, res) {
     const challengeID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
@@ -118,10 +202,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  /*
-   * Delete a todo item.
-   */
-  function deleteChallenge(req, res, next) {
+  function deleteChallenge(req, res) {
     const challengeID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)

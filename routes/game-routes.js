@@ -12,21 +12,123 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-export default (app, rethinkdb) => {
-  app.route('/games/all')
-    .get(listGames)           // List all games
-  app.route('/games/new')
-    .post(createGame)         // Create a new game
-    .get(createGame)
-  app.route('/games/:id')
-    .get(getGame)             // Get a specific game
-    .put(updateGame)          // Update a specific game
-    .delete(deleteGame)       // Delete a specific game
+export default (swagger, rethinkdb) => {
 
-  app.route('/games/:id/trials')
-    .get(getTrialsForGame)             // Get a specific game
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/all",
+      "notes" : "Returns a array of game objects",
+      "summary" : "List games",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "Game",
+      "errorResponses" : [],
+      "nickname" : "listGames",
+    },
+    'action': listGames,
+  })
 
-  function listGames(req, res, next) {
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/{id}",
+      "notes" : "Returns a game object",
+      "summary" : "Get game by id",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of game that needs to be fetched", 
+          "string"
+        ),
+      ],
+      "type" : "Game",
+      "errorResponses" : [],
+      "nickname" : "getGame",
+    },
+    'action': getGame,
+  })
+
+  swagger.addPost({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/new",
+      "notes" : "Returns a new game object",
+      "summary" : "Create a new game",
+      "method": "POST",
+      "parameters" : [],
+      "type" : "Game",
+      "errorResponses" : [],
+      "nickname" : "createGame",
+    },
+    'action': createGame,
+  })
+
+  swagger.addPut({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/{id}",
+      "notes" : "Returns the updated game object",
+      "summary" : "Update a game",
+      "method": "PUT",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of game that needs to be updated", 
+          "string"
+        ),
+      ],
+      "type" : "Game",
+      "errorResponses" : [],
+      "nickname" : "updateGame",
+    },
+    'action': updateGame,
+  })
+
+  swagger.addDelete({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/{id}",
+      "notes" : "Returns a status object",
+      "summary" : "Deletes a game",
+      "method": "DELETE",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of game that needs to be deleted", 
+          "string"
+        ),
+      ],
+      "type" : "Game",
+      "errorResponses" : [],
+      "nickname" : "deleteGame",
+    },
+    'action': deleteGame,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about games",
+      "path" : "/games/{id}/trials",
+      "notes" : "Returns a array of trial objects",
+      "summary" : "List trials for game",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", 
+          "ID of game to list trials for", 
+          "string"
+        ),
+      ],
+      "type" : "Trial",
+      "errorResponses" : [],
+      "nickname" : "listTrialsForGame",
+    },
+    'action': listTrialsForGame,
+  })
+
+  function listGames(req, res) {
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
@@ -42,7 +144,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function getGame(req, res, next) {
+  function getGame(req, res) {
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -58,7 +160,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function createGame(req, res, next) {
+  function createGame(req, res) {
     let connection = null
     const game = {}
     game.name = req.body.name || "Unnamed Game"
@@ -85,7 +187,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function updateGame(req, res, next) {
+  function updateGame(req, res) {
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -119,7 +221,7 @@ export default (app, rethinkdb) => {
   /*
    * Delete a todo item.
    */
-  function deleteGame(req, res, next) {
+  function deleteGame(req, res) {
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -136,14 +238,14 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function getTrialsForGame(req, res, next){
+  function listTrialsForGame(req, res){
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
         connection = conn
         return rethinkdb
-          .table('trials')
+          .table('games')
           .filter({'game':gameID}) 
           .run(connection)
       })
