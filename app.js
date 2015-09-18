@@ -71,6 +71,11 @@ require('./routes/trial-routes')(swagger, rethinkdb)
 require('./routes/score-routes')(swagger, rethinkdb)
 
 swagger.configure("http://localhost:3000", "0.1");
+swagger.setApiInfo({
+  description: "Awesome API for RetroGameNight",
+  version: "1.0.0",
+  title: "RetroGameNight API (rgn-api)",
+})
 
 // Start server
 app.listen(3000)
