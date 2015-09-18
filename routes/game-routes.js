@@ -27,138 +27,129 @@ export default (app, rethinkdb) => {
     .get(getTrialsForGame)             // Get a specific game
 
   function listGames(req, res, next) {
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('games').orderBy({index: "createdAt"}).run(conn, (error, cursor) => {
-          if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray((error, result) => {
-                  if (error) {
-                      handleError(res, error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('games')
+          .orderBy({index: "createdAt"})
+          .run(connection)
       })
-    })
+      .then(cursor => cursor.toArray())
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function getGame(req, res, next) {
+    let connection = null
     const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('games').get(gameID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('games')
+          .get(gameID)
+          .run(conn)
       })
-    })
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function createGame(req, res, next) {
-      const game = {}
-      game.name = req.body.name || "Unnamed Game"
-      game.system = req.body.system || "Unnamed System"
-      game.avatarURL = req.body.avatarURL || ""
-      game.createdAt = rethinkdb.now()
-      game.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-        rethinkdb.table('games').insert(game, {returnChanges: true}).run(conn, (error, result) => {
-            if (error) {
-                handleError(res, error) 
-                next()
-            }
-            else if (result.inserted !== 1) {
-                handleError(res, new Error("Document was not inserted."))
-                next()
-            }
-            else {
-                res.json(result.changes[0].new_val)
-            }
-        })
+    let connection = null
+    const game = {}
+    game.name = req.body.name || "Unnamed Game"
+    game.system = req.body.system || "Unnamed System"
+    game.avatarURL = req.body.avatarURL || ""
+    game.createdAt = rethinkdb.now()
+    game.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('games')
+          .insert(game, {returnChanges: true})
+          .run(connection)
       })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateGame(req, res, next) {
+    let connection = null
     const gameID = req.params.id
-    const game = {}
-    let currentgame = {}
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('games').get(gameID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          currentgame = result
-          game.name = req.body.name || currentgame.name
-          game.avatarURL = req.body.avatarURL || currentgame.avatarURL
-          game.system = req.body.system || currentgame.system         // req.body was created by `bodyParser`
-          game.lastUpdated = rethinkdb.now()
-          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-            rethinkdb.table('games').get(gameID).update(game, {returnChanges: true}).run(conn, (error, result) => {
-              if(error) {
-                //handleError(res, error) 
-                throw error
-                next()
-              }
-              else {
-                res.json(result.changes[0].new_val)
-              }
-            })
-          })
-        }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('games')
+          .get(gameID)
+          .run(connection)
       })
-    })
+      .then(result => {
+        const game = {}
+        const currentgame = result
+        game.name = req.body.name || currentgame.name
+        game.avatarURL = req.body.avatarURL || currentgame.avatarURL
+        game.system = req.body.system || currentgame.system         // req.body was created by `bodyParser`
+        game.lastUpdated = rethinkdb.now()
+        return game
+      })
+      .then(game => rethinkdb
+        .table('games')
+        .get(gameID)
+        .update(game, {returnChanges: true})
+        .run(connection)
+      )
+      .then(result => res.json(result.changes[0].new_val))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   /*
    * Delete a todo item.
    */
   function deleteGame(req, res, next) {
+    let connection = null
     const gameID = req.params.id
-
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('games').get(gameID).delete().run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          res.json({success: true})
-        }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('games')
+          .get(gameID)
+          .delete()
+          .run(connection)
       })
-    })
+      .then(() => res.json({success: true}))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function getTrialsForGame(req, res, next){
+    let connection = null
     const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('trials').filter({'game':gameID}).run(conn, (error, cursor) => {
-        if (error) {
-                handleError(res, error) 
-                next()
-            }
-            else {
-                // Retrieve all the todos in an array
-                cursor.toArray((error, result) => {
-                    if (error) {
-                        handleError(res, error) 
-                    }
-                    else {
-                        // Send back the data
-                        res.json(result)
-                    }
-                })
-            }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .filter({'game':gameID}) 
+          .run(connection)
       })
-    })
+      .then(cursor => cursor.toArray())
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 }

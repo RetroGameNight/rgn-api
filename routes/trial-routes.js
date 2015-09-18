@@ -23,118 +23,116 @@ export default (app, rethinkdb) => {
     .put(updateTrial)          // Update a specific Trial
     .delete(deleteTrial)       // Delete a specific Trial
   function listTrials(req, res, next) {
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('trials').orderBy({index: "createdAt"}).run(conn, (error, cursor) => {
-          if (error) {
-              handleError(res, error) 
-              next()
-          }
-          else {
-              // Retrieve all the todos in an array
-              cursor.toArray(function(error, result) {
-                  if (error) {
-                      handleError(res, error) 
-                  }
-                  else {
-                      // Send back the data
-                      res.json(result)
-                  }
-              })
-          }
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .orderBy({index: "createdAt"})
+          .run(connection)
       })
-    })
+      .then(cursor => cursor.toArray())
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function getTrial(req, res, next) {
+    let connection = null
     const trialID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('trials').get(trialID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        res.json(result)
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .get(trialID)
+          .run(conn)
       })
-    })
+      .then(result => res.json(result))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function createTrial(req, res, next) {
-      const trial = {}
-      trial.name = req.body.name || "Unnamed Trial"
-      trial.game = req.body.game || "Unnamed Game";
-      trial.type = req.body.type || "Point"
-      trial.description = req.body.description || "A trial description"
-      trial.creator = req.body.creator || "Anonymous"
-      trial.createdAt = rethinkdb.now()
-      trial.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-        rethinkdb.table('trials').insert(trial, {returnChanges: true}).run(conn, (error, result) => {
-            if (error) {
-                handleError(res, error) 
-                next()
-            }
-            else if (result.inserted !== 1) {
-                handleError(res, new Error("Document was not inserted."))
-                next()
-            }
-            else {
-                res.json(result.changes[0].new_val)
-            }
-        })
+    let connection = null
+    const trial = {}
+    trial.name = req.body.name || "Unnamed Trial"
+    trial.game = req.body.game || "Unnamed Game";
+    trial.type = req.body.type || "Point"
+    trial.description = req.body.description || "A trial description"
+    trial.creator = req.body.creator || "Anonymous"
+    trial.createdAt = rethinkdb.now()
+    trial.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .insert(trial, {returnChanges: true})
+          .run(connection)
       })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateTrial(req, res, next) {
+    let connection = null
     const trialID = req.params.id
-    const trial = {}
-    let currentTrial = {}
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('trials').get(trialID).run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          currentTrial = result
-          trial.name = req.body.name || currentTrial.name
-          trial.game = req.body.game || currentTrial.game
-          trial.type = req.body.type || currentTrial.type
-          trial.description = req.body.description || currentTrial.description
-          trial.creator = req.body.creator || currentTrial.creator
-          trial.lastUpdated = rethinkdb.now()
-          rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-            rethinkdb.table('trials').get(trialID).update(trial, {returnChanges: true}).run(conn, (error, result) => {
-              if(error) {
-                //handleError(res, error) 
-                throw error
-                next()
-              }
-              else {
-                res.json(result.changes[0].new_val)
-              }
-            })
-          })
-        }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .get(trialID)
+          .run(connection)
       })
-    })
+      .then(result => {
+        const trial = {}
+        const currentTrial = result
+        trial.name = req.body.name || currentTrial.name
+        trial.game = req.body.game || currentTrial.game
+        trial.type = req.body.type || currentTrial.type
+        trial.description = req.body.description || currentTrial.description
+        trial.creator = req.body.creator || currentTrial.creator
+        trial.lastUpdated = rethinkdb.now()
+        return trial
+      })
+      .then(trial => rethinkdb
+        .table('trials')
+        .get(trialID)
+        .update(trial, {returnChanges: true})
+        .run(connection)
+      )
+      .then(result => res.json(result.changes[0].new_val))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   /*
    * Delete a todo item.
    */
   function deleteTrial(req, res, next) {
+    let connection = null
     const trialID = req.params.id
-
-    rethinkdb.connect(appconfig.rethinkdb, (err, conn) => {
-      rethinkdb.table('trials').get(trialID).delete().run(conn, (error, result) => {
-        if(error) {
-          handleError(res, error) 
-          next()
-        }
-        else {
-          res.json({success: true})
-        }
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('trials')
+          .get(trialID)
+          .delete()
+          .run(connection)
       })
-    })
+      .then(() => res.json({success: true}))
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 }
