@@ -22,7 +22,7 @@ module.exports = function (swagger, rethinkdb) {
       "summary" : "List users",
       "method": "GET",
       "parameters" : [],
-      "type" : "User",
+      "type" : "List[User]",
       "errorResponses" : [],
       "nickname" : "listUsers",
     },
@@ -38,10 +38,7 @@ module.exports = function (swagger, rethinkdb) {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be fetched", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be fetched", "string"),
       ],
       "type" : "User",
       "errorResponses" : [],
@@ -57,7 +54,10 @@ module.exports = function (swagger, rethinkdb) {
       "notes" : "Returns a new user object",
       "summary" : "Create a new user",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam(
+          "user", "new User", "User"),
+      ],
       "type" : "User",
       "errorResponses" : [],
       "nickname" : "createUser",
@@ -74,10 +74,9 @@ module.exports = function (swagger, rethinkdb) {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be updated", "string"),
+        swagger.bodyParam(
+          "user", "new User", "User"),
       ],
       "type" : "User",
       "errorResponses" : [],
@@ -95,10 +94,7 @@ module.exports = function (swagger, rethinkdb) {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be deleted", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be deleted", "string"),
       ],
       "type" : "User",
       "errorResponses" : [],

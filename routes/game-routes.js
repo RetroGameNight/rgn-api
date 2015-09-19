@@ -22,7 +22,7 @@ export default (swagger, rethinkdb) => {
       "summary" : "List games",
       "method": "GET",
       "parameters" : [],
-      "type" : "Game",
+      "type" : "List[Game]",
       "errorResponses" : [],
       "nickname" : "listGames",
     },
@@ -38,9 +38,7 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of game that needs to be fetched", 
-          "string"
+          "id", "ID of game that needs to be fetched", "string"
         ),
       ],
       "type" : "Game",
@@ -57,7 +55,10 @@ export default (swagger, rethinkdb) => {
       "notes" : "Returns a new game object",
       "summary" : "Create a new game",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam(
+          "game", "new Game", "Game"),
+      ],
       "type" : "Game",
       "errorResponses" : [],
       "nickname" : "createGame",
@@ -74,10 +75,9 @@ export default (swagger, rethinkdb) => {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of game that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of game that needs to be updated", "string"),
+        swagger.bodyParam(
+          "game", "new Game", "Game"),
       ],
       "type" : "Game",
       "errorResponses" : [],
@@ -95,10 +95,7 @@ export default (swagger, rethinkdb) => {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of game that needs to be deleted", 
-          "string"
-        ),
+          "id", "ID of game that needs to be deleted", "string"),
       ],
       "type" : "Game",
       "errorResponses" : [],
@@ -116,9 +113,7 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of game to list trials for", 
-          "string"
+          "id", "ID of game to list trials for", "string"
         ),
       ],
       "type" : "Trial",

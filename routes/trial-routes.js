@@ -22,7 +22,7 @@ export default (swagger, rethinkdb) => {
       "summary" : "List trials",
       "method": "GET",
       "parameters" : [],
-      "type" : "Trial",
+      "type" : "List[Trial]",
       "errorResponses" : [],
       "nickname" : "listTrials",
     },
@@ -38,10 +38,7 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of trial that needs to be fetched", 
-          "string"
-        ),
+          "id", "ID of trial that needs to be fetched", "string"),
       ],
       "type" : "Trial",
       "errorResponses" : [],
@@ -57,7 +54,10 @@ export default (swagger, rethinkdb) => {
       "notes" : "Returns a new trial object",
       "summary" : "Create a new trial",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam(
+          "trial", "new Trial", "Trial"),
+      ],
       "type" : "Trial",
       "errorResponses" : [],
       "nickname" : "createTrial",
@@ -74,10 +74,9 @@ export default (swagger, rethinkdb) => {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of trial that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of trial that needs to be updated", "string"),
+        swagger.bodyParam(
+          "trial", "new Trial", "Trial"),
       ],
       "type" : "Trial",
       "errorResponses" : [],
@@ -95,9 +94,7 @@ export default (swagger, rethinkdb) => {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of trial that needs to be deleted", 
-          "string"
+          "id", "ID of trial that needs to be deleted", "string"
         ),
       ],
       "type" : "Trial",

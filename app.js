@@ -22,6 +22,8 @@ import passport from 'passport'
 import { OAuth2Strategy as GoogleStrategy } from 'passport-google-oauth'
 import { Strategy as FacebookStrategy } from 'passport-facebook'
 
+import models from './models'
+
 // Initialize Express App
 const app = express()
 const allowCrossDomain = (req, res, next) => {
@@ -61,6 +63,7 @@ app.use(passport.initialize())
 app.use(passport.session())
 require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passport)
 
+swagger.addModels(models)
 // Load in authentication routes
 require('./routes/auth-routes')(app, appconfig, passport)
 require('./routes/user-routes')(swagger, rethinkdb)

@@ -13,6 +13,16 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
+const Challenge = {
+  id: "Challenge",
+  properties: {
+    id: {
+      description: "id of trial",
+      type: "string",
+    }
+  }
+}
+
 export default (swagger, rethinkdb) => {
 
   swagger.addGet({
@@ -23,7 +33,8 @@ export default (swagger, rethinkdb) => {
       "summary" : "List challenges",
       "method": "GET",
       "parameters" : [],
-      "type" : "Challenge",
+      "type" : "List[Challenge]",
+      "produces" : ["application/json"],
       "errorResponses" : [],
       "nickname" : "listChallenges",
     },
@@ -58,7 +69,13 @@ export default (swagger, rethinkdb) => {
       "notes" : "Returns a new challenge object",
       "summary" : "Create a new challenge",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam(
+          "challenge", 
+          "new Challenge", 
+          "Challenge", 
+        ),
+      ],
       "type" : "Challenge",
       "errorResponses" : [],
       "nickname" : "createChallenge",
@@ -78,6 +95,11 @@ export default (swagger, rethinkdb) => {
           "id", 
           "ID of challange that needs to be updated", 
           "string"
+        ),
+        swagger.bodyParam(
+          "challenge", 
+          "new Challenge", 
+          "Challenge", 
         ),
       ],
       "type" : "Challenge",
@@ -110,6 +132,7 @@ export default (swagger, rethinkdb) => {
 
   function listChallenges(req,res) {
     let connection = null
+    console.log(req)
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
         connection = conn

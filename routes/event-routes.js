@@ -15,15 +15,15 @@ export default (swagger, rethinkdb) => {
 
   swagger.addGet({
     'spec': {
+      "nickname" : "listEvents",
       "description" : "Operations about events",
       "path" : "/events/all",
       "notes" : "Returns a array of event objects",
       "summary" : "List events",
       "method": "GET",
       "parameters" : [],
-      "type" : "Event",
+      "type" : "List[Event]",
       "errorResponses" : [],
-      "nickname" : "listEvents",
     },
     'action': listEvents,
   })
@@ -56,7 +56,9 @@ export default (swagger, rethinkdb) => {
       "notes" : "Returns a new event object",
       "summary" : "Create a new event",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam("event", "new Event", "Event"),
+      ],
       "type" : "Event",
       "errorResponses" : [],
       "nickname" : "createEvent",
@@ -73,10 +75,9 @@ export default (swagger, rethinkdb) => {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of event that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of event that needs to be updated", "string"),
+        swagger.bodyParam(
+          "event", "new Event", "Event"),
       ],
       "type" : "Event",
       "errorResponses" : [],
@@ -94,10 +95,7 @@ export default (swagger, rethinkdb) => {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of event that needs to be deleted", 
-          "string"
-        ),
+          "id", "ID of event that needs to be deleted", "string"),
       ],
       "type" : "Event",
       "errorResponses" : [],
@@ -105,6 +103,21 @@ export default (swagger, rethinkdb) => {
     },
     'action': deleteEvent,
   })
+
+  function defaultPost() {
+    const now = rethinkdb.now()
+    return {
+      startTime: now,
+      endTime: now.add(14400),
+      name: "Unnamed Game Night",
+      owner: "Anonymous",
+      people: [],
+      avatarURL: "",
+      type: "other",
+      createdAt: now,
+      lastUpdated: now,
+    }
+  }
 
   function listEvents(req, res) {
     let connection = null

@@ -22,7 +22,7 @@ export default (swagger, rethinkdb) => {
       "summary" : "List latest scores",
       "method": "GET",
       "parameters" : [],
-      "type" : "Score",
+      "type" : "List[Score]",
       "errorResponses" : [],
       "nickname" : "listLatestScores",
     },
@@ -37,7 +37,7 @@ export default (swagger, rethinkdb) => {
       "summary" : "List scores",
       "method": "GET",
       "parameters" : [],
-      "type" : "Score",
+      "type" : "List[Score]",
       "errorResponses" : [],
       "nickname" : "listScores",
     },
@@ -53,10 +53,7 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be fetched", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be fetched", "string"),
       ],
       "type" : "Score",
       "errorResponses" : [],
@@ -72,7 +69,10 @@ export default (swagger, rethinkdb) => {
       "notes" : "Returns a new score object",
       "summary" : "Create a new score",
       "method": "POST",
-      "parameters" : [],
+      "parameters" : [
+        swagger.bodyParam(
+          "score", "new Score", "Score"),
+      ],
       "type" : "Score",
       "errorResponses" : [],
       "nickname" : "createScore",
@@ -89,10 +89,9 @@ export default (swagger, rethinkdb) => {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be updated", "string"),
+        swagger.bodyParam(
+          "score", "new Score", "Score"),
       ],
       "type" : "Score",
       "errorResponses" : [],
@@ -110,10 +109,7 @@ export default (swagger, rethinkdb) => {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be deleted", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be deleted", "string"),
       ],
       "type" : "Score",
       "errorResponses" : [],
