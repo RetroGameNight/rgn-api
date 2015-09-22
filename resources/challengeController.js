@@ -243,7 +243,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('challenge', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
