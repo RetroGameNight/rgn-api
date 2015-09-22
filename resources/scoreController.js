@@ -5,8 +5,10 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -178,36 +180,48 @@ export default (swagger, rethinkdb) => {
   }
 
   function createScore(req, res) {
-      const score = {}
-      score.user = req.body.user || 'Anonymous'
-      score.issuer = req.body.issuer || ''
-      score.player = req.body.players || 'Anonymous'
-      score.challenge = req.body.challenge || 'Super Mario 10000 Points'
-      score.status = req.body.status || 'Open'
-      score.result = req.body.score || ''
-      score.createdAt = rethinkdb.now()
-      score.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      let connection = null
-      rethinkdb.connect(appconfig.rethinkdb)
-        .then(conn => {
-          connection = conn
-          return rethinkdb
-            .table('scores')
-            .insert(score, {returnChanges: true})
-            .run(connection)
-        })
-        .then(result => {
-          if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-          } else {
-              return res.json(result.changes[0].new_val)
-          }
-        })
-        .then(() => connection.close())
-        .error(error => handleError(res, error))
+    if (req.body) {
+      const validationErrors = swaggerValidate.model(req.body, models.Score)
+      if (validationErrors) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
+    const score = {}
+    score.user = req.body.user || 'Anonymous'
+    score.issuer = req.body.issuer || ''
+    score.player = req.body.players || 'Anonymous'
+    score.challenge = req.body.challenge || 'Super Mario 10000 Points'
+    score.status = req.body.status || 'Open'
+    score.result = req.body.score || ''
+    score.createdAt = rethinkdb.now()
+    score.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('scores')
+          .insert(score, {returnChanges: true})
+          .run(connection)
+      })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateScore(req, res) {
+    const validationErrors = swaggerValidate.model(req.body, models.Score)
+    if (validationErrors) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     let connection = null
     const scoreID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)

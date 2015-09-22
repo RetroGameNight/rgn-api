@@ -6,7 +6,9 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
  
+import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -145,6 +147,13 @@ export default (swagger, rethinkdb) => {
   }
 
   function createUser(req, res) {
+    if (req.body) {
+      const validationErrors = swaggerValidate.model(req.body, models.User)
+      if (validationErrors) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
     let connection = null
     const user = {}
     user.name = req.body.name || "Anonymous"
@@ -173,6 +182,11 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateUser(req, res) {
+    const validationErrors = swaggerValidate.model(req.body, models.User)
+    if (validationErrors) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     const userID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)

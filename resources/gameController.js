@@ -5,8 +5,10 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -165,6 +167,13 @@ export default (swagger, rethinkdb) => {
   }
 
   function createGame(req, res) {
+    if (req.body) {
+      const validationErrors = swaggerValidate.model(req.body, models.Game)
+      if (validationErrors) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
     let connection = null
     const game = {}
     game.name = req.body.name || "Unnamed Game"
@@ -192,6 +201,11 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateGame(req, res) {
+    const validationErrors = swaggerValidate.model(req.body, models.Game)
+    if (validationErrors) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
