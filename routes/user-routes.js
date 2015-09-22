@@ -23,7 +23,7 @@ module.exports = function (swagger, rethinkdb) {
       "method": "GET",
       "parameters" : [],
       "type" : "List[User]",
-      "errorResponses" : [],
+      "responseMessages" : [],
       "nickname" : "listUsers",
     },
     'action': listUsers,
@@ -38,10 +38,12 @@ module.exports = function (swagger, rethinkdb) {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", "ID of challange that needs to be fetched", "string"),
+          "id", "ID of user that needs to be fetched", "string"),
       ],
       "type" : "User",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('user'),
+      ],
       "nickname" : "getUser",
     },
     'action': getUser,
@@ -59,7 +61,9 @@ module.exports = function (swagger, rethinkdb) {
           "user", "new User", "User"),
       ],
       "type" : "User",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
       "nickname" : "createUser",
     },
     'action': createUser,
@@ -74,12 +78,15 @@ module.exports = function (swagger, rethinkdb) {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", "ID of challange that needs to be updated", "string"),
+          "id", "ID of user that needs to be updated", "string"),
         swagger.bodyParam(
           "user", "new User", "User"),
       ],
       "type" : "User",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('user'),
+      ],
       "nickname" : "updateUser",
     },
     'action': updateUser,
@@ -94,10 +101,12 @@ module.exports = function (swagger, rethinkdb) {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", "ID of challange that needs to be deleted", "string"),
+          "id", "ID of user that needs to be deleted", "string"),
       ],
       "type" : "User",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('user'),
+      ],
       "nickname" : "deleteUser",
     },
     'action': deleteUser,

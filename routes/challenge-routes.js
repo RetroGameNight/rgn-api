@@ -13,16 +13,6 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-const Challenge = {
-  id: "Challenge",
-  properties: {
-    id: {
-      description: "id of trial",
-      type: "string",
-    }
-  }
-}
-
 export default (swagger, rethinkdb) => {
 
   swagger.addGet({
@@ -35,7 +25,7 @@ export default (swagger, rethinkdb) => {
       "parameters" : [],
       "type" : "List[Challenge]",
       "produces" : ["application/json"],
-      "errorResponses" : [],
+      "responseMessages" : [],
       "nickname" : "listChallenges",
     },
     'action': listChallenges,
@@ -50,13 +40,13 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be fetched", 
-          "string"
+          "id", "ID of challange that needs to be fetched", "string"
         ),
       ],
       "type" : "Challenge",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('challange'),
+      ],
       "nickname" : "getChallenge",
     },
     'action': getChallenge,
@@ -71,13 +61,12 @@ export default (swagger, rethinkdb) => {
       "method": "POST",
       "parameters" : [
         swagger.bodyParam(
-          "challenge", 
-          "new Challenge", 
-          "Challenge", 
-        ),
+          "challenge", "new Challenge", "Challenge"),
       ],
       "type" : "Challenge",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
       "nickname" : "createChallenge",
     },
     'action': createChallenge,
@@ -92,18 +81,15 @@ export default (swagger, rethinkdb) => {
       "method": "PUT",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be updated", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be updated", "string"),
         swagger.bodyParam(
-          "challenge", 
-          "new Challenge", 
-          "Challenge", 
-        ),
+          "challenge", "new Challenge", "Challenge", undefined, true),
       ],
       "type" : "Challenge",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('challange'),
+      ],
       "nickname" : "updateChallenge",
     },
     'action': updateChallenge,
@@ -118,13 +104,12 @@ export default (swagger, rethinkdb) => {
       "method": "DELETE",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of challange that needs to be deleted", 
-          "string"
-        ),
+          "id", "ID of challange that needs to be deleted", "string"),
       ],
       "type" : "Challenge",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('challange'),
+      ],
       "nickname" : "deleteChallenge",
     },
     'action': deleteChallenge,

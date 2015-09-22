@@ -23,7 +23,7 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [],
       "type" : "List[Event]",
-      "errorResponses" : [],
+      "responseMessages" : [],
     },
     'action': listEvents,
   })
@@ -37,13 +37,12 @@ export default (swagger, rethinkdb) => {
       "method": "GET",
       "parameters" : [
         swagger.pathParam(
-          "id", 
-          "ID of event that needs to be fetched", 
-          "string"
-        ),
+          "id", "ID of event that needs to be fetched", "string"),
       ],
       "type" : "Event",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('event'),
+      ],
       "nickname" : "getEvent",
     },
     'action': getEvent,
@@ -60,7 +59,9 @@ export default (swagger, rethinkdb) => {
         swagger.bodyParam("event", "new Event", "Event"),
       ],
       "type" : "Event",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
       "nickname" : "createEvent",
     },
     'action': createEvent,
@@ -80,7 +81,10 @@ export default (swagger, rethinkdb) => {
           "event", "new Event", "Event"),
       ],
       "type" : "Event",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('event'),
+      ],
       "nickname" : "updateEvent",
     },
     'action': updateEvent,
@@ -98,7 +102,9 @@ export default (swagger, rethinkdb) => {
           "id", "ID of event that needs to be deleted", "string"),
       ],
       "type" : "Event",
-      "errorResponses" : [],
+      "responseMessages" : [
+        swagger.errors.notFound('event'),
+      ],
       "nickname" : "deleteEvent",
     },
     'action': deleteEvent,
