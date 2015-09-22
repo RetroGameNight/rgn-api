@@ -141,7 +141,13 @@ export default (swagger, rethinkdb) => {
           .get(userID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('user', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -172,7 +178,7 @@ export default (swagger, rethinkdb) => {
       })
       .then(result => {
         if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
+          swa
         } else {
             return res.json(result.changes[0].new_val)
         }

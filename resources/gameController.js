@@ -161,7 +161,13 @@ export default (swagger, rethinkdb) => {
           .get(gameID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('game', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }

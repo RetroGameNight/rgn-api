@@ -174,7 +174,13 @@ export default (swagger, rethinkdb) => {
           .get(scoreID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('score', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
