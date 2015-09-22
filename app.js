@@ -65,13 +65,13 @@ require('./auth')(FacebookStrategy, GoogleStrategy, rethinkdb, appconfig, passpo
 
 swagger.addModels(models)
 // Load in authentication routes
-require('./routes/auth-routes')(app, appconfig, passport)
-require('./routes/user-routes')(swagger, rethinkdb)
-require('./routes/event-routes')(swagger, rethinkdb)
-require('./routes/game-routes')(swagger, rethinkdb)
-require('./routes/challenge-routes')(swagger, rethinkdb)
-require('./routes/trial-routes')(swagger, rethinkdb)
-require('./routes/score-routes')(swagger, rethinkdb)
+require('./auth-routes')(app, appconfig, passport)
+require('./resources/userController')(swagger, rethinkdb)
+require('./resources/eventController')(swagger, rethinkdb)
+require('./resources/gameController')(swagger, rethinkdb)
+require('./resources/challengeController')(swagger, rethinkdb)
+require('./resources/trialController')(swagger, rethinkdb)
+require('./resources/scoreController')(swagger, rethinkdb)
 
 swagger.configure("http://localhost:3000", "0.1");
 swagger.setApiInfo({

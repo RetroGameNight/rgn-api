@@ -12,7 +12,7 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-module.exports = function (swagger, rethinkdb) {
+export default (swagger, rethinkdb) => {
 
   swagger.addGet({
     'spec': {
