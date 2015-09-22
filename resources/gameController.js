@@ -249,7 +249,7 @@ export default (swagger, rethinkdb) => {
       .then(conn => {
         connection = conn
         return rethinkdb
-          .table('games')
+          .table('trials')
           .filter({'game':gameID}) 
           .run(connection)
       })
