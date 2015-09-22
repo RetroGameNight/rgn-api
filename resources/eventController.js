@@ -11,20 +11,121 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-export default (app, rethinkdb) => {
-  app.route('/events/all')
-      .get(listEvents)
-      .post(createEvent)             // Retrieve all the todos
-  app.route('/events/new')
-      .post(createEvent)             // Create a new todo
-      .get(createEvent)
-  app.route('/events/:id')
-    .get(getEvent)
-    .put(updateEvent)
-    .delete(deleteEvent)
-  //app.route('/user/update').put(update)          // Update a todo
-  //app.route('/user/delete').post(del)         // Delete a todo
-  function listEvents(req, res, next) {
+export default (swagger, rethinkdb) => {
+
+  swagger.addGet({
+    'spec': {
+      "nickname" : "listEvents",
+      "description" : "Operations about events",
+      "path" : "/events/all",
+      "notes" : "Returns a array of event objects",
+      "summary" : "List events",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "List[Event]",
+      "responseMessages" : [],
+    },
+    'action': listEvents,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about events",
+      "path" : "/events/{id}",
+      "notes" : "Returns an event object",
+      "summary" : "Get event by id",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of event that needs to be fetched", "string"),
+      ],
+      "type" : "Event",
+      "responseMessages" : [
+        swagger.errors.notFound('event'),
+      ],
+      "nickname" : "getEvent",
+    },
+    'action': getEvent,
+  })
+
+  swagger.addPost({
+    'spec': {
+      "description" : "Operations about events",
+      "path" : "/events/new",
+      "notes" : "Returns a new event object",
+      "summary" : "Create a new event",
+      "method": "POST",
+      "parameters" : [
+        swagger.bodyParam("event", "new Event", "Event"),
+      ],
+      "type" : "Event",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
+      "nickname" : "createEvent",
+    },
+    'action': createEvent,
+  })
+
+  swagger.addPut({
+    'spec': {
+      "description" : "Operations about events",
+      "path" : "/events/{id}",
+      "notes" : "Returns the updated event object",
+      "summary" : "Update an event",
+      "method": "PUT",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of event that needs to be updated", "string"),
+        swagger.bodyParam(
+          "event", "new Event", "Event"),
+      ],
+      "type" : "Event",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('event'),
+      ],
+      "nickname" : "updateEvent",
+    },
+    'action': updateEvent,
+  })
+
+  swagger.addDelete({
+    'spec': {
+      "description" : "Operations about events",
+      "path" : "/events/{id}",
+      "notes" : "Returns a status object",
+      "summary" : "Deletes an event",
+      "method": "DELETE",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of event that needs to be deleted", "string"),
+      ],
+      "type" : "Event",
+      "responseMessages" : [
+        swagger.errors.notFound('event'),
+      ],
+      "nickname" : "deleteEvent",
+    },
+    'action': deleteEvent,
+  })
+
+  function defaultPost() {
+    const now = rethinkdb.now()
+    return {
+      startTime: now,
+      endTime: now.add(14400),
+      name: "Unnamed Game Night",
+      owner: "Anonymous",
+      people: [],
+      avatarURL: "",
+      type: "other",
+      createdAt: now,
+      lastUpdated: now,
+    }
+  }
+
+  function listEvents(req, res) {
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
@@ -39,7 +140,8 @@ export default (app, rethinkdb) => {
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
-  function getEvent(req, res, next) {
+
+  function getEvent(req, res) {
     let connection = null
     const eventID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -55,7 +157,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function createEvent(req, res, next) {
+  function createEvent(req, res) {
       let connection = null
       const event = {}
       event.startTime = req.body.startTime || rethinkdb.now()
@@ -86,7 +188,7 @@ export default (app, rethinkdb) => {
         .error(error => handleError(res, error))
   }
 
-  function updateEvent(req, res, next) {
+  function updateEvent(req, res) {
     const eventID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
@@ -124,7 +226,7 @@ export default (app, rethinkdb) => {
   /*
    * Delete a todo item.
    */
-  function deleteEvent(req, res, next) {
+  function deleteEvent(req, res) {
     const eventID = req.params.id
 
     let connection = null

@@ -12,18 +12,107 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-module.exports = function (app, rethinkdb) {
-  app.route('/users/all')
-    .get(listUsers)           // List all users
-  app.route('/users/new')
-    .post(createUser)         // Create a new user
-    .get(createUser)
-  app.route('/users/:id')
-    .get(getUser)             // Get a specific user
-    .put(updateUser)          // Update a specific user
-    .delete(deleteUser)       // Delete a specific user
+export default (swagger, rethinkdb) => {
 
-  function listUsers(req, res, next) {
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about users",
+      "path" : "/users/all",
+      "notes" : "Returns a array of user objects",
+      "summary" : "List users",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "List[User]",
+      "responseMessages" : [],
+      "nickname" : "listUsers",
+    },
+    'action': listUsers,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about users",
+      "path" : "/users/{id}",
+      "notes" : "Returns an user object",
+      "summary" : "Get user by id",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of user that needs to be fetched", "string"),
+      ],
+      "type" : "User",
+      "responseMessages" : [
+        swagger.errors.notFound('user'),
+      ],
+      "nickname" : "getUser",
+    },
+    'action': getUser,
+  })
+
+  swagger.addPost({
+    'spec': {
+      "description" : "Operations about users",
+      "path" : "/users/new",
+      "notes" : "Returns a new user object",
+      "summary" : "Create a new user",
+      "method": "POST",
+      "parameters" : [
+        swagger.bodyParam(
+          "user", "new User", "User"),
+      ],
+      "type" : "User",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
+      "nickname" : "createUser",
+    },
+    'action': createUser,
+  })
+
+  swagger.addPut({
+    'spec': {
+      "description" : "Operations about users",
+      "path" : "/users/{id}",
+      "notes" : "Returns the updated user object",
+      "summary" : "Update an users",
+      "method": "PUT",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of user that needs to be updated", "string"),
+        swagger.bodyParam(
+          "user", "new User", "User"),
+      ],
+      "type" : "User",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('user'),
+      ],
+      "nickname" : "updateUser",
+    },
+    'action': updateUser,
+  })
+
+  swagger.addDelete({
+    'spec': {
+      "description" : "Operations about users",
+      "path" : "/users/{id}",
+      "notes" : "Returns a status object",
+      "summary" : "Deletes an user",
+      "method": "DELETE",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of user that needs to be deleted", "string"),
+      ],
+      "type" : "User",
+      "responseMessages" : [
+        swagger.errors.notFound('user'),
+      ],
+      "nickname" : "deleteUser",
+    },
+    'action': deleteUser,
+  })
+
+  function listUsers(req, res) {
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
@@ -39,7 +128,7 @@ module.exports = function (app, rethinkdb) {
       .error(error => handleError(res, error))
   }
 
-  function getUser(req, res, next) {
+  function getUser(req, res) {
     let connection = null
     const userID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -55,7 +144,7 @@ module.exports = function (app, rethinkdb) {
       .error(error => handleError(res, error))
   }
 
-  function createUser(req, res, next) {
+  function createUser(req, res) {
     let connection = null
     const user = {}
     user.name = req.body.name || "Anonymous"
@@ -83,7 +172,7 @@ module.exports = function (app, rethinkdb) {
       .error(error => handleError(res, error))
   }
 
-  function updateUser(req, res, next) {
+  function updateUser(req, res) {
     const userID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
@@ -118,7 +207,7 @@ module.exports = function (app, rethinkdb) {
   /*
    * Delete a todo item.
    */
-  function deleteUser(req, res, next) {
+  function deleteUser(req, res) {
     let connection = null
     const userID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)

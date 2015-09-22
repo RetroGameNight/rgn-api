@@ -12,20 +12,122 @@ function handleError(res, error) {
   console.log("error", error)
 }
 
-export default (app, rethinkdb) => {
-  app.route('/scores/latest')
-    .get(listRecentScores)
-  app.route('/scores/all')
-    .get(listScores)
-  app.route('/scores/new')
-    .post(createScore)         // Create a new score
-    .get(createScore)
-  app.route('/scores/:id')
-    .get(getScore)             // Get a specific score
-    .put(updateScore)          // Update a specific score
-    .delete(deleteScore)       // Delete a specific score
+export default (swagger, rethinkdb) => {
 
-  function listScores(req, res, next) {
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/latest",
+      "notes" : "Returns a array of score objects",
+      "summary" : "List latest scores",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "List[Score]",
+      "responseMessages" : [],
+      "nickname" : "listLatestScores",
+    },
+    'action': listLatestScores,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/all",
+      "notes" : "Returns a array of score objects",
+      "summary" : "List scores",
+      "method": "GET",
+      "parameters" : [],
+      "type" : "List[Score]",
+      "responseMessages" : [],
+      "nickname" : "listScores",
+    },
+    'action': listScores,
+  })
+
+  swagger.addGet({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/{id}",
+      "notes" : "Returns a score object",
+      "summary" : "Get score by id",
+      "method": "GET",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of challange that needs to be fetched", "string"),
+      ],
+      "type" : "Score",
+      "responseMessages" : [
+        swagger.errors.notFound('score'),
+      ],
+      "nickname" : "getScore",
+    },
+    'action': getScore,
+  })
+
+  swagger.addPost({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/new",
+      "notes" : "Returns a new score object",
+      "summary" : "Create a new score",
+      "method": "POST",
+      "parameters" : [
+        swagger.bodyParam(
+          "score", "new Score", "Score"),
+      ],
+      "type" : "Score",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+      ],
+      "nickname" : "createScore",
+    },
+    'action': createScore,
+  })
+
+  swagger.addPut({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/{id}",
+      "notes" : "Returns the updated score object",
+      "summary" : "Update a scores",
+      "method": "PUT",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of challange that needs to be updated", "string"),
+        swagger.bodyParam(
+          "score", "new Score", "Score"),
+      ],
+      "type" : "Score",
+      "responseMessages" : [
+        swagger.errors.invalid('body'),
+        swagger.errors.notFound('score'),
+      ],
+      "nickname" : "updateScore",
+    },
+    'action': updateScore,
+  })
+
+  swagger.addDelete({
+    'spec': {
+      "description" : "Operations about scores",
+      "path" : "/scores/{id}",
+      "notes" : "Returns a status object",
+      "summary" : "Deletes a score",
+      "method": "DELETE",
+      "parameters" : [
+        swagger.pathParam(
+          "id", "ID of challange that needs to be deleted", "string"),
+      ],
+      "type" : "Score",
+      "responseMessages" : [
+        swagger.errors.notFound('score'),
+      ],
+      "nickname" : "deleteScore",
+    },
+    'action': deleteScore,
+  })
+
+  function listScores(req, res) {
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
       .then(conn => {
@@ -40,7 +142,8 @@ export default (app, rethinkdb) => {
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
-  function listRecentScores(req, res, next) {
+
+  function listLatestScores(req, res) {
     let connection = null
     const numScores = parseInt(req.query.scores) || 10
     rethinkdb.connect(appconfig.rethinkdb)
@@ -58,7 +161,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function getScore(req, res, next) {
+  function getScore(req, res) {
     let connection = null
     const scoreID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -74,7 +177,7 @@ export default (app, rethinkdb) => {
       .error(error => handleError(res, error))
   }
 
-  function createScore(req, res, next) {
+  function createScore(req, res) {
       const score = {}
       score.user = req.body.user || 'Anonymous'
       score.issuer = req.body.issuer || ''
@@ -104,7 +207,7 @@ export default (app, rethinkdb) => {
         .error(error => handleError(res, error))
   }
 
-  function updateScore(req, res, next) {
+  function updateScore(req, res) {
     let connection = null
     const scoreID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -141,7 +244,7 @@ export default (app, rethinkdb) => {
   /*
    * Delete a todo item.
    */
-  function deleteScore(req, res, next) {
+  function deleteScore(req, res) {
     let connection = null
     const scoreID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
