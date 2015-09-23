@@ -244,7 +244,13 @@ export default (swagger, rethinkdb) => {
           })
           .run(connection)
       })
-      .then(result => res.json(result.changes[0].new_val))
+      .then(result => {
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('score', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
