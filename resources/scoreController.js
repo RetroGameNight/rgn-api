@@ -6,6 +6,7 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
 
+import _ from 'lodash'
 import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
 import { models } from '../models'
@@ -236,26 +237,13 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('scores')
           .get(scoreID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
-      .then(result => {
-        const score = {}
-        const currentScore = result
-        score.user = req.body.user || currentScore.user
-        score.issuer = req.body.issuer || currentScore.issuer
-        score.player = req.body.player || currentScore.player
-        score.challenge = req.body.challenge || currentScore.challenge
-        score.status = req.body.status || currentScore.status
-        score.result = req.body.result || currentScore.result
-        score.lastUpdated = rethinkdb.now()
-        return score
-      })
-      .then(score => rethinkdb
-        .table('scores')
-        .get(scoreID)
-        .update(score, {returnChanges: true})
-        .run(connection)
-      )
       .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))

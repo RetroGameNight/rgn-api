@@ -5,7 +5,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import _ from 'lodash' 
 import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
 import { models } from '../models'
@@ -201,24 +202,13 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('users')
           .get(userID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
-      .then(result => {
-        const user = {}
-        const currentUser = result
-        user.name = req.body.name || currentUser.name
-        user.email = req.body.email || currentUser.email
-        user.avatarURL = req.body.avatarURL || currentUser.avatarURL
-        user.type = req.body.type || currentUser.type         // req.body was created by `bodyParser`
-        user.lastUpdated = rethinkdb.now()
-        return user
-      })
-      .then(user => rethinkdb
-        .table('users')
-        .get(userID)
-        .update(user, {returnChanges: true})
-        .run(connection)
-      )
       .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))

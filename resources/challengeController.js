@@ -7,6 +7,7 @@
  */
 "use strict"
 
+import _ from 'lodash'
 import swaggerValidate from 'swagger-validate'
 import appconfig from '../config/appconfig'
 import { models } from '../models'
@@ -207,25 +208,13 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('challenges')
           .get(challengeID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
-      .then(result => {
-        const challenge = {}
-        const currentChallenge = result
-        challenge.trial = req.body.trial || currentChallenge.trial
-        //challenge.goal = req.body.goal || currentChallenge.goal
-        challenge.issuer = req.body.issuer || currentChallenge.issuer
-        challenge.player = req.body.player || currentChallenge.player
-        challenge.challengeStatus = req.body.challengeStatus || currentChallenge.challengeStatus
-        challenge.lastUpdated = rethinkdb.now()
-        return challenge
-      })
-      .then(challenge => rethinkdb
-        .table('challenges')
-        .get(challengeID)
-        .update(challenge, {returnChanges: true})
-        .run(connection)
-      )
       .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
