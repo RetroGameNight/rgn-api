@@ -117,8 +117,8 @@ export default {
           description: "The user created the score",
           type: "string",
         },
-        trials: {
-          description: "the score this trials relates to",
+        trial: {
+          description: "the trial this score relates to",
           type: "string",
         },
         createdAt: {

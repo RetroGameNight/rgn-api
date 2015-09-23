@@ -8,7 +8,7 @@
 "use strict"
 
 import _ from 'lodash'
-import swaggerValidate from 'swagger-validate'
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
 import { models } from '../models'
 
@@ -160,8 +160,7 @@ export default (swagger, rethinkdb) => {
 
   function createChallenge(req, res) {
     if (req.body) {
-      const validationErrors = swaggerValidate.model(req.body, models.Challenge)
-      if (validationErrors) {
+      if (!isValid(req.body, models.Challenge)) {
         swagger.errors.invalid('body', res)
         return
       }
@@ -195,8 +194,8 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateChallenge(req, res) {
-    const validationErrors = swaggerValidate.model(req.body, models.Challenge)
-    if (validationErrors) {
+    if (!isValid(req.body, models.Challenge)) {
+      console.log('updateChallenge not valid')
       swagger.errors.invalid('body', res)
       return
     }

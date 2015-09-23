@@ -72,7 +72,6 @@ describe('Routing', function(){
     it('should update event by id', function(done) {
       var testEventJSON = {
         'name':'Test game night',
-        'people':['avidreder@gmail.com','test@test.com'],
         'avatarURL':'Test URL',
         'owner':'avidreder@gmail.com',
         'type':'test'

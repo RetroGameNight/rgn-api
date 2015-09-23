@@ -7,7 +7,7 @@
  */
 
 import _ from 'lodash'
-import swaggerValidate from 'swagger-validate'
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
 import { models } from '../models'
 
@@ -169,8 +169,7 @@ export default (swagger, rethinkdb) => {
 
   function createEvent(req, res) {
     if (req.body) {
-      const validationErrors = swaggerValidate.model(req.body, models.Event)
-      if (validationErrors) {
+      if (!isValid(req.body, models.Event)) {
         swagger.errors.invalid('body', res)
         return
       }
@@ -206,8 +205,7 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateEvent(req, res) {
-    const validationErrors = swaggerValidate.model(req.body, models.Event)
-    if (validationErrors) {
+    if (!isValid(req.body, models.Event)) {
       swagger.errors.invalid('body', res)
       return
     }
