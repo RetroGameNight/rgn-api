@@ -5,8 +5,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import _ from 'lodash' 
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -139,12 +142,24 @@ export default (swagger, rethinkdb) => {
           .get(userID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('user', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
 
   function createUser(req, res) {
+    if (req.body) {
+      if (!isValid(req.body, models.User)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
     let connection = null
     const user = {}
     user.name = req.body.name || "Anonymous"
@@ -163,7 +178,7 @@ export default (swagger, rethinkdb) => {
       })
       .then(result => {
         if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
+          swa
         } else {
             return res.json(result.changes[0].new_val)
         }
@@ -173,6 +188,10 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateUser(req, res) {
+    if (!isValid(req.body, models.User)) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     const userID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
@@ -181,25 +200,20 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('users')
           .get(userID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
       .then(result => {
-        const user = {}
-        const currentUser = result
-        user.name = req.body.name || currentUser.name
-        user.email = req.body.email || currentUser.email
-        user.avatarURL = req.body.avatarURL || currentUser.avatarURL
-        user.type = req.body.type || currentUser.type         // req.body was created by `bodyParser`
-        user.lastUpdated = rethinkdb.now()
-        return user
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('user', res)
+        }
       })
-      .then(user => rethinkdb
-        .table('users')
-        .get(userID)
-        .update(user, {returnChanges: true})
-        .run(connection)
-      )
-      .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -219,7 +233,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('user', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }

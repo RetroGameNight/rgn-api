@@ -2,7 +2,6 @@ export default {
   models: {
     Challenge: {
       id: "Challenge",
-      required: ['id'],
       properties: {
         id: {
           description: "id of trial",
@@ -39,7 +38,6 @@ export default {
     },
     Event: {
       id: 'Event',
-      required: ['id'],
       properties: {
         id: {
           description: "id of event",
@@ -77,7 +75,6 @@ export default {
     },
     Game: {
       id: 'Game',
-      required: ['id'],
       properties: {
         id: {
           description: "id of game",
@@ -107,7 +104,6 @@ export default {
     },
     Score: {
       id: 'Score',
-      required: ['id'],
       properties: {
         id: {
           description: "id of score",
@@ -121,8 +117,8 @@ export default {
           description: "The user created the score",
           type: "string",
         },
-        trials: {
-          description: "the score this trials relates to",
+        trial: {
+          description: "the trial this score relates to",
           type: "string",
         },
         createdAt: {
@@ -137,7 +133,6 @@ export default {
     },
     Trial: {
       id: 'Trial',
-      required: ['id'],
       properties: {
         id: {
           description: "id of trial",
@@ -175,7 +170,6 @@ export default {
     },
     User: {
       id: 'User',
-      required: ['id'],
       properties: {
         id: {
           description: "id of user",

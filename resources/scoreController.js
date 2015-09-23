@@ -5,8 +5,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import _ from 'lodash'
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -172,42 +175,58 @@ export default (swagger, rethinkdb) => {
           .get(scoreID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('score', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
 
   function createScore(req, res) {
-      const score = {}
-      score.user = req.body.user || 'Anonymous'
-      score.issuer = req.body.issuer || ''
-      score.player = req.body.players || 'Anonymous'
-      score.challenge = req.body.challenge || 'Super Mario 10000 Points'
-      score.status = req.body.status || 'Open'
-      score.result = req.body.score || ''
-      score.createdAt = rethinkdb.now()
-      score.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-      let connection = null
-      rethinkdb.connect(appconfig.rethinkdb)
-        .then(conn => {
-          connection = conn
-          return rethinkdb
-            .table('scores')
-            .insert(score, {returnChanges: true})
-            .run(connection)
-        })
-        .then(result => {
-          if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-          } else {
-              return res.json(result.changes[0].new_val)
-          }
-        })
-        .then(() => connection.close())
-        .error(error => handleError(res, error))
+    if (req.body) {
+      if (!isValid(req.body, models.Score)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
+    const score = {}
+    score.user = req.body.user || 'Anonymous'
+    score.issuer = req.body.issuer || ''
+    score.player = req.body.players || 'Anonymous'
+    score.challenge = req.body.challenge || 'Super Mario 10000 Points'
+    score.status = req.body.status || 'Open'
+    score.result = req.body.score || ''
+    score.createdAt = rethinkdb.now()
+    score.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
+    let connection = null
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('scores')
+          .insert(score, {returnChanges: true})
+          .run(connection)
+      })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateScore(req, res) {
+    if (!isValid(req.body, models.Score)) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     let connection = null
     const scoreID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -216,27 +235,20 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('scores')
           .get(scoreID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
       .then(result => {
-        const score = {}
-        const currentScore = result
-        score.user = req.body.user || currentScore.user
-        score.issuer = req.body.issuer || currentScore.issuer
-        score.player = req.body.player || currentScore.player
-        score.challenge = req.body.challenge || currentScore.challenge
-        score.status = req.body.status || currentScore.status
-        score.result = req.body.result || currentScore.result
-        score.lastUpdated = rethinkdb.now()
-        return score
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('score', res)
+        }
       })
-      .then(score => rethinkdb
-        .table('scores')
-        .get(scoreID)
-        .update(score, {returnChanges: true})
-        .run(connection)
-      )
-      .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -256,7 +268,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('score', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }

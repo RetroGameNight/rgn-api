@@ -99,12 +99,9 @@ describe('Routing', function(){
 
     it('should update score by id', function(done) {
       var testScoreJSON = {
-        'user':'Test score',
         'issuer':'Test Game',
-        'challenge':'Test Challenge',
+        'trial':'Test Trial',
         'player':'Player 1',
-        'status':'Open',
-        'result': '10000'
       };
       request(app)
       .put('/scores/' + testScore.id)

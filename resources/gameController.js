@@ -5,8 +5,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
- 
+
+import _ from 'lodash'
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -159,12 +162,24 @@ export default (swagger, rethinkdb) => {
           .get(gameID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('game', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
 
   function createGame(req, res) {
+    if (req.body) {
+      if (!isValid(req.body, models.Game)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
     let connection = null
     const game = {}
     game.name = req.body.name || "Unnamed Game"
@@ -192,6 +207,10 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateGame(req, res) {
+    if (!isValid(req.body, models.Game)) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     let connection = null
     const gameID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -200,24 +219,20 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('games')
           .get(gameID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
       .then(result => {
-        const game = {}
-        const currentgame = result
-        game.name = req.body.name || currentgame.name
-        game.avatarURL = req.body.avatarURL || currentgame.avatarURL
-        game.system = req.body.system || currentgame.system         // req.body was created by `bodyParser`
-        game.lastUpdated = rethinkdb.now()
-        return game
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('game', res)
+        }
       })
-      .then(game => rethinkdb
-        .table('games')
-        .get(gameID)
-        .update(game, {returnChanges: true})
-        .run(connection)
-      )
-      .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -237,7 +252,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('game', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }

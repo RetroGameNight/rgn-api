@@ -6,7 +6,10 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
  
+import _ from 'lodash' 
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -140,12 +143,24 @@ export default (swagger, rethinkdb) => {
           .get(trialID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('trial', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
 
   function createTrial(req, res) {
+    if (req.body) {
+      if (!isValid(req.body, models.Trial)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
     let connection = null
     const trial = {}
     trial.name = req.body.name || "Unnamed Trial"
@@ -175,6 +190,10 @@ export default (swagger, rethinkdb) => {
   }
 
   function updateTrial(req, res) {
+    if (!isValid(req.body, models.Trial)) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     let connection = null
     const trialID = req.params.id
     rethinkdb.connect(appconfig.rethinkdb)
@@ -183,26 +202,20 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('trials')
           .get(trialID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
       .then(result => {
-        const trial = {}
-        const currentTrial = result
-        trial.name = req.body.name || currentTrial.name
-        trial.game = req.body.game || currentTrial.game
-        trial.type = req.body.type || currentTrial.type
-        trial.description = req.body.description || currentTrial.description
-        trial.creator = req.body.creator || currentTrial.creator
-        trial.lastUpdated = rethinkdb.now()
-        return trial
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('trial', res)
+        }
       })
-      .then(trial => rethinkdb
-        .table('trials')
-        .get(trialID)
-        .update(trial, {returnChanges: true})
-        .run(connection)
-      )
-      .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -222,7 +235,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('trial', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }

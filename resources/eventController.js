@@ -5,7 +5,11 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
+
+import _ from 'lodash'
+import { isValid } from '../validator'
 import appconfig from '../config/appconfig'
+import { models } from '../models'
 
 function handleError(res, error) {
   console.log("error", error)
@@ -152,43 +156,59 @@ export default (swagger, rethinkdb) => {
           .get(eventID)
           .run(conn)
       })
-      .then(result => res.json(result))
+      .then(results => {
+        if (results) {
+          res.json(results)
+        } else {
+          swagger.errors.notFound('event', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
 
   function createEvent(req, res) {
-      let connection = null
-      const event = {}
-      event.startTime = req.body.startTime || rethinkdb.now()
-      event.endTime = req.body.endTime || rethinkdb.now().add(14400)      // req.body was created by `bodyParser`  // Set the field `createdAt` to the current time
-      event.name = req.body.name || "Unnamed Game Night"
-      event.owner = req.body.owner || "Anonymous"
-      event.people = req.body.people || []
-      event.avatarURL = req.body.avatarURL || ""
-      event.type = req.body.type || "other"         // req.body was created by `bodyParser`
-      event.createdAt = rethinkdb.now()
-      event.lastUpdated = rethinkdb.now()
-      rethinkdb.connect(appconfig.rethinkdb)
-        .then(conn => {
-          connection = conn
-          return rethinkdb
-            .table('events')
-            .insert(event, {returnChanges: true})
-            .run(connection)
-        })
-        .then(result => {
-          if (result.inserted !== 1) {
-              handleError(res, new Error("Document was not inserted."))
-          } else {
-              return res.json(result.changes[0].new_val)
-          }
-        })
-        .then(() => connection.close())
-        .error(error => handleError(res, error))
+    if (req.body) {
+      if (!isValid(req.body, models.Event)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+    }
+    let connection = null
+    const event = {}
+    event.startTime = req.body.startTime || rethinkdb.now()
+    event.endTime = req.body.endTime || rethinkdb.now().add(14400)      // req.body was created by `bodyParser`  // Set the field `createdAt` to the current time
+    event.name = req.body.name || "Unnamed Game Night"
+    event.owner = req.body.owner || "Anonymous"
+    event.people = req.body.people || []
+    event.avatarURL = req.body.avatarURL || ""
+    event.type = req.body.type || "other"         // req.body was created by `bodyParser`
+    event.createdAt = rethinkdb.now()
+    event.lastUpdated = rethinkdb.now()
+    rethinkdb.connect(appconfig.rethinkdb)
+      .then(conn => {
+        connection = conn
+        return rethinkdb
+          .table('events')
+          .insert(event, {returnChanges: true})
+          .run(connection)
+      })
+      .then(result => {
+        if (result.inserted !== 1) {
+            handleError(res, new Error("Document was not inserted."))
+        } else {
+            return res.json(result.changes[0].new_val)
+        }
+      })
+      .then(() => connection.close())
+      .error(error => handleError(res, error))
   }
 
   function updateEvent(req, res) {
+    if (!isValid(req.body, models.Event)) {
+      swagger.errors.invalid('body', res)
+      return
+    }
     const eventID = req.params.id
     let connection = null
     rethinkdb.connect(appconfig.rethinkdb)
@@ -197,28 +217,20 @@ export default (swagger, rethinkdb) => {
         return rethinkdb
           .table('events')
           .get(eventID)
+          .update(_.merge(req.body, {
+            lastUpdated: rethinkdb.now(),
+          }),{
+            returnChanges: true
+          })
           .run(connection)
       })
       .then(result => {
-        const event = {}
-        const currentEvent = result
-        event.name = req.body.name || currentEvent.name
-        event.owner = req.body.owner || currentEvent.owner
-        event.startTime = req.body.startTime || currentEvent.startTime
-        event.people = req.body.people || currentEvent.people
-        event.endTime = req.body.endTime || currentEvent.endTime
-        event.avatarURL = req.body.avatarURL || currentEvent.avatarURL
-        event.type = req.body.type || currentEvent.type         // req.body was created by `bodyParser`
-        event.lastUpdated = rethinkdb.now()
-        return event
+        if (result.replaced > 0) {
+          res.json(result.changes[0].new_val)
+        } else {
+          swagger.errors.notFound('event', res)
+        }
       })
-      .then(event => rethinkdb
-        .table('events')
-        .get(eventID)
-        .update(event, {returnChanges: true})
-        .run(connection)
-      )
-      .then(result => res.json(result.changes[0].new_val))
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
@@ -239,7 +251,13 @@ export default (swagger, rethinkdb) => {
           .delete()
           .run(connection)
       })
-      .then(() => res.json({success: true}))
+      .then(status => {
+        if (status.deleted == 1) {
+          res.json({success: true})
+        } else {
+          swagger.errors.notFound('event', res)
+        }
+      })
       .then(() => connection.close())
       .error(error => handleError(res, error))
   }
