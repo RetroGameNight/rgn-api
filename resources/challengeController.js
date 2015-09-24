@@ -5,20 +5,14 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE.txt file in the root directory of this source tree.
  */
-"use strict"
 
-import _ from 'lodash'
 import { isValid } from '../validator'
-import appconfig from '../config/appconfig'
 import { models } from '../models'
-
-//const Challenge = models.Challenge
-
-function handleError(res, error) {
-  console.log("error", error)
-}
+import ChallengeServiceClass from './challengeService'
 
 export default (swagger, rethinkdb) => {
+
+  const challengeService = new ChallengeServiceClass(rethinkdb)
 
   swagger.addGet({
     'spec': {
@@ -33,7 +27,10 @@ export default (swagger, rethinkdb) => {
       "responseMessages" : [],
       "nickname" : "listChallenges",
     },
-    'action': listChallenges,
+    'action': (req, res) => {
+      challengeService.list('createdAt')
+        .then(results => res.json(results))
+    },
   })
 
   swagger.addGet({
@@ -54,7 +51,14 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "getChallenge",
     },
-    'action': getChallenge,
+    'action': (req, res) => {
+      const challengeID = req.params.id;
+      challengeService.get(challengeID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('challange', res)
+        })
+    },
   })
 
   swagger.addPost({
@@ -74,7 +78,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "createChallenge",
     },
-    'action': createChallenge,
+    'action': (req, res) => {
+      if (req.body) {
+        if (!isValid(req.body, models.Challenge)) {
+          swagger.errors.invalid('body', res)
+          return
+        }
+      }
+      challengeService.create(req.body)
+        .then(newChallenge => res.json(newChallenge))
+    },
   })
 
   swagger.addPut({
@@ -97,7 +110,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "updateChallenge",
     },
-    'action': updateChallenge,
+    'action': (req, res) => {
+      if (!isValid(req.body, models.Challenge)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+      const challengeID = req.params.id
+      challengeService.update(challengeID, req.body)
+        .then(updatedChallenge => res.json(updatedChallenge))
+        .catch(error => swagger.errors.notFound('challenge', res))
+    },
   })
 
   swagger.addDelete({
@@ -117,134 +139,11 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "deleteChallenge",
     },
-    'action': deleteChallenge,
+    'action': (req, res) => {
+      const challengeID = req.params.id
+      challengeService.delete(challengeID)
+        .then(() => res.json({success: true}))
+        .catch(error => swagger.errors.notFound('challenge', res))
+    },
   })
-
-  function listChallenges(req,res) {
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('challenges')
-          .orderBy({index: "createdAt"})
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(results => res.json(results))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function getChallenge(req, res) {
-    let connection = null
-    const challengeID = req.params.id;
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('challenges')
-          .get(challengeID)
-          .run(conn)
-      })
-      .then(results => {
-        if (results) {
-          res.json(results)
-        } else {
-          swagger.errors.notFound('challenge', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function createChallenge(req, res) {
-    if (req.body) {
-      if (!isValid(req.body, models.Challenge)) {
-        swagger.errors.invalid('body', res)
-        return
-      }
-    }
-    let connection = null
-    const challenge = {}
-    challenge.trial = req.body.trial || "Unnamed Trial"
-    //challenge.goal = req.body.goal || "10000"
-    challenge.issuer = req.body.issuer || "Anonymous"
-    challenge.player = req.body.player || "Anonymous"
-    challenge.challengeStatus = req.body.challengeStatus || "Pending"
-    challenge.createdAt = rethinkdb.now()
-    challenge.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('challenges')
-          .insert(challenge, {returnChanges: true})
-          .run(connection)
-      })
-      .then(result => {
-        if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
-        } else {
-            return res.json(result.changes[0].new_val)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function updateChallenge(req, res) {
-    if (!isValid(req.body, models.Challenge)) {
-      console.log('updateChallenge not valid')
-      swagger.errors.invalid('body', res)
-      return
-    }
-    const challengeID = req.params.id
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('challenges')
-          .get(challengeID)
-          .update(_.merge(req.body, {
-            lastUpdated: rethinkdb.now(),
-          }),{
-            returnChanges: true
-          })
-          .run(connection)
-      })
-      .then(result => {
-        if (result.replaced > 0) {
-          res.json(result.changes[0].new_val)
-        } else {
-          swagger.errors.notFound('challenge', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function deleteChallenge(req, res) {
-    const challengeID = req.params.id
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('challenges')
-          .get(challengeID)
-          .delete()
-          .run(connection)
-      })
-      .then(status => {
-        if (status.deleted == 1) {
-          res.json({success: true})
-        } else {
-          swagger.errors.notFound('challenge', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
 }
