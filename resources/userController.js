@@ -8,14 +8,12 @@
 
 import _ from 'lodash' 
 import { isValid } from '../validator'
-import appconfig from '../config/appconfig'
 import { models } from '../models'
-
-function handleError(res, error) {
-  console.log("error", error)
-}
+import UserServiceClass from './userService'
 
 export default (swagger, rethinkdb) => {
+
+  const userService = new UserServiceClass(rethinkdb)
 
   swagger.addGet({
     'spec': {
@@ -29,7 +27,10 @@ export default (swagger, rethinkdb) => {
       "responseMessages" : [],
       "nickname" : "listUsers",
     },
-    'action': listUsers,
+    'action': (req, res) => {
+      userService.list('createdAt')
+        .then(results => res.json(results))
+    },
   })
 
   swagger.addGet({
@@ -49,7 +50,14 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "getUser",
     },
-    'action': getUser,
+    'action': (req, res) => {
+      const userID = req.params.id;
+      userService.get(userID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('user', res)
+        })
+    },
   })
 
   swagger.addPost({
@@ -69,7 +77,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "createUser",
     },
-    'action': createUser,
+    'action': (req, res) => {
+      if (req.body) {
+        if (!isValid(req.body, models.User)) {
+          swagger.errors.invalid('body', res)
+          return
+        }
+      }
+      userService.create(req.body)
+        .then(newService => res.json(newService))
+    },
   })
 
   swagger.addPut({
@@ -92,7 +109,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "updateUser",
     },
-    'action': updateUser,
+    'action': (req, res) => {
+      if (!isValid(req.body, models.User)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+      const userID = req.params.id
+      userService.update(userID, req.body)
+        .then(updatedUser => res.json(updatedUser))
+        .catch(error => swagger.errors.notFound('user', res))
+    },
   })
 
   swagger.addDelete({
@@ -112,135 +138,11 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "deleteUser",
     },
-    'action': deleteUser,
+    'action': (req, res) => {
+      const userID = req.params.id
+      userService.delete(userID)
+        .then(() => res.json({success: true}))
+        .catch(error => swagger.errors.notFound('user', res))
+    },
   })
-
-  function listUsers(req, res) {
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('users')
-          .orderBy({index: "createdAt"})
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(result => res.json(result))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function getUser(req, res) {
-    let connection = null
-    const userID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('users')
-          .get(userID)
-          .run(conn)
-      })
-      .then(results => {
-        if (results) {
-          res.json(results)
-        } else {
-          swagger.errors.notFound('user', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function createUser(req, res) {
-    if (req.body) {
-      if (!isValid(req.body, models.User)) {
-        swagger.errors.invalid('body', res)
-        return
-      }
-    }
-    let connection = null
-    const user = {}
-    user.name = req.body.name || "Anonymous"
-    user.email = req.body.email || "Anonymous"
-    user.avatarURL = req.body.avatarURL || ""
-    user.type = req.body.type || "other"         // req.body was created by `bodyParser`
-    user.createdAt = rethinkdb.now()
-    user.lastUpdated = rethinkdb.now()    // Set the field `createdAt` to the current time
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('users')
-          .insert(user, {returnChanges: true})
-          .run(connection)
-      })
-      .then(result => {
-        if (result.inserted !== 1) {
-          swa
-        } else {
-            return res.json(result.changes[0].new_val)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function updateUser(req, res) {
-    if (!isValid(req.body, models.User)) {
-      swagger.errors.invalid('body', res)
-      return
-    }
-    const userID = req.params.id
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('users')
-          .get(userID)
-          .update(_.merge(req.body, {
-            lastUpdated: rethinkdb.now(),
-          }),{
-            returnChanges: true
-          })
-          .run(connection)
-      })
-      .then(result => {
-        if (result.replaced > 0) {
-          res.json(result.changes[0].new_val)
-        } else {
-          swagger.errors.notFound('user', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  /*
-   * Delete a todo item.
-   */
-  function deleteUser(req, res) {
-    let connection = null
-    const userID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('users')
-          .get(userID)
-          .delete()
-          .run(connection)
-      })
-      .then(status => {
-        if (status.deleted == 1) {
-          res.json({success: true})
-        } else {
-          swagger.errors.notFound('user', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
 }
