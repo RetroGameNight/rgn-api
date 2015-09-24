@@ -6,16 +6,13 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
 
-import _ from 'lodash'
 import { isValid } from '../validator'
-import appconfig from '../config/appconfig'
 import { models } from '../models'
-
-function handleError(res, error) {
-  console.log("error", error)
-}
+import EventServiceClass from './eventService'
 
 export default (swagger, rethinkdb) => {
+
+  const eventService = new EventServiceClass(rethinkdb)
 
   swagger.addGet({
     'spec': {
@@ -29,7 +26,10 @@ export default (swagger, rethinkdb) => {
       "type" : "List[Event]",
       "responseMessages" : [],
     },
-    'action': listEvents,
+    'action': (req, res) => {
+      eventService.list('startTime')
+        .then(results => res.json(results))
+    },
   })
 
   swagger.addGet({
@@ -49,7 +49,14 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "getEvent",
     },
-    'action': getEvent,
+    'action': (req, res) => {
+      const eventID = req.params.id;
+      eventService.get(eventID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('event', res)
+        })
+    },
   })
 
   swagger.addPost({
@@ -68,7 +75,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "createEvent",
     },
-    'action': createEvent,
+    'action': (req, res) => {
+      if (req.body) {
+        if (!isValid(req.body, models.Event)) {
+          swagger.errors.invalid('body', res)
+          return
+        }
+      }
+      eventService.create(req.body)
+        .then(newEvent => res.json(newEvent))
+    },
   })
 
   swagger.addPut({
@@ -91,7 +107,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "updateEvent",
     },
-    'action': updateEvent,
+    'action': (req, res) => {
+      if (!isValid(req.body, models.Event)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+      const eventID = req.params.id
+      eventService.update(eventID, req.body)
+        .then(updatedEvent => res.json(updatedEvent))
+        .catch(error => swagger.errors.notFound('event', res))
+    },
   })
 
   swagger.addDelete({
@@ -111,154 +136,11 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "deleteEvent",
     },
-    'action': deleteEvent,
+    'action': (req, res) => {
+      const eventID = req.params.id
+      eventService.delete(eventID)
+        .then(() => res.json({success: true}))
+        .catch(error => swagger.errors.notFound('event', res))
+    },
   })
-
-  function defaultPost() {
-    const now = rethinkdb.now()
-    return {
-      startTime: now,
-      endTime: now.add(14400),
-      name: "Unnamed Game Night",
-      owner: "Anonymous",
-      people: [],
-      avatarURL: "",
-      type: "other",
-      createdAt: now,
-      lastUpdated: now,
-    }
-  }
-
-  function listEvents(req, res) {
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('events')
-          .orderBy({index: "startTime"})
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(result => res.json(result))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function getEvent(req, res) {
-    let connection = null
-    const eventID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('events')
-          .get(eventID)
-          .run(conn)
-      })
-      .then(results => {
-        if (results) {
-          res.json(results)
-        } else {
-          swagger.errors.notFound('event', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function createEvent(req, res) {
-    if (req.body) {
-      if (!isValid(req.body, models.Event)) {
-        swagger.errors.invalid('body', res)
-        return
-      }
-    }
-    let connection = null
-    const event = {}
-    event.startTime = req.body.startTime || rethinkdb.now()
-    event.endTime = req.body.endTime || rethinkdb.now().add(14400)      // req.body was created by `bodyParser`  // Set the field `createdAt` to the current time
-    event.name = req.body.name || "Unnamed Game Night"
-    event.owner = req.body.owner || "Anonymous"
-    event.people = req.body.people || []
-    event.avatarURL = req.body.avatarURL || ""
-    event.type = req.body.type || "other"         // req.body was created by `bodyParser`
-    event.createdAt = rethinkdb.now()
-    event.lastUpdated = rethinkdb.now()
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('events')
-          .insert(event, {returnChanges: true})
-          .run(connection)
-      })
-      .then(result => {
-        if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
-        } else {
-            return res.json(result.changes[0].new_val)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function updateEvent(req, res) {
-    if (!isValid(req.body, models.Event)) {
-      swagger.errors.invalid('body', res)
-      return
-    }
-    const eventID = req.params.id
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('events')
-          .get(eventID)
-          .update(_.merge(req.body, {
-            lastUpdated: rethinkdb.now(),
-          }),{
-            returnChanges: true
-          })
-          .run(connection)
-      })
-      .then(result => {
-        if (result.replaced > 0) {
-          res.json(result.changes[0].new_val)
-        } else {
-          swagger.errors.notFound('event', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  /*
-   * Delete a todo item.
-   */
-  function deleteEvent(req, res) {
-    const eventID = req.params.id
-
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('events')
-          .get(eventID)
-          .delete()
-          .run(connection)
-      })
-      .then(status => {
-        if (status.deleted == 1) {
-          res.json({success: true})
-        } else {
-          swagger.errors.notFound('event', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
 }
