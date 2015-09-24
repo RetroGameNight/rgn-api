@@ -8,14 +8,12 @@
 
 import _ from 'lodash'
 import { isValid } from '../validator'
-import appconfig from '../config/appconfig'
 import { models } from '../models'
-
-function handleError(res, error) {
-  console.log("error", error)
-}
+import GameServiceClass from './gameService'
 
 export default (swagger, rethinkdb) => {
+
+  const gameService = new GameServiceClass(rethinkdb)
 
   swagger.addGet({
     'spec': {
@@ -29,7 +27,10 @@ export default (swagger, rethinkdb) => {
       "responseMessages" : [],
       "nickname" : "listGames",
     },
-    'action': listGames,
+    'action': (req, res) => {
+      gameService.list('createdAt')
+        .then(results => res.json(results))
+    },
   })
 
   swagger.addGet({
@@ -50,7 +51,14 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "getGame",
     },
-    'action': getGame,
+    'action': (req, res) => {
+      const gameID = req.params.id;
+      gameService.get(gameID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('game', res)
+        })
+    },
   })
 
   swagger.addPost({
@@ -70,7 +78,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "createGame",
     },
-    'action': createGame,
+    'action': (req, res) => {
+      if (req.body) {
+        if (!isValid(req.body, models.Game)) {
+          swagger.errors.invalid('body', res)
+          return
+        }
+      }
+      gameService.create(req.body)
+        .then(newGame => res.json(newGame))
+    },
   })
 
   swagger.addPut({
@@ -93,7 +110,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "updateGame",
     },
-    'action': updateGame,
+    'action': (req, res) => {
+      if (!isValid(req.body, models.Game)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+      const gameID = req.params.id
+      gameService.update(gameID, req.body)
+        .then(updatedGame => res.json(updatedGame))
+        .catch(error => swagger.errors.notFound('game', res))
+    },
   })
 
   swagger.addDelete({
@@ -111,7 +137,12 @@ export default (swagger, rethinkdb) => {
       "responseMessages" : [],
       "nickname" : "deleteGame",
     },
-    'action': deleteGame,
+    'action': (req, res) => {
+      const gameID = req.params.id
+      gameService.delete(gameID)
+        .then(() => res.json({success: true}))
+        .catch(error => swagger.errors.notFound('game', res))
+    },
   })
 
   swagger.addGet({
@@ -132,151 +163,13 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "listTrialsForGame",
     },
-    'action': listTrialsForGame,
+    'action': (req, res) => {
+      const gameID = req.params.id;
+      gameService.listTrials(gameID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('game', res)
+        })
+    },
   })
-
-  function listGames(req, res) {
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('games')
-          .orderBy({index: "createdAt"})
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(result => res.json(result))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function getGame(req, res) {
-    let connection = null
-    const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('games')
-          .get(gameID)
-          .run(conn)
-      })
-      .then(results => {
-        if (results) {
-          res.json(results)
-        } else {
-          swagger.errors.notFound('game', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function createGame(req, res) {
-    if (req.body) {
-      if (!isValid(req.body, models.Game)) {
-        swagger.errors.invalid('body', res)
-        return
-      }
-    }
-    let connection = null
-    const game = {}
-    game.name = req.body.name || "Unnamed Game"
-    game.system = req.body.system || "Unnamed System"
-    game.avatarURL = req.body.avatarURL || ""
-    game.createdAt = rethinkdb.now()
-    game.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('games')
-          .insert(game, {returnChanges: true})
-          .run(connection)
-      })
-      .then(result => {
-        if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
-        } else {
-            return res.json(result.changes[0].new_val)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function updateGame(req, res) {
-    if (!isValid(req.body, models.Game)) {
-      swagger.errors.invalid('body', res)
-      return
-    }
-    let connection = null
-    const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('games')
-          .get(gameID)
-          .update(_.merge(req.body, {
-            lastUpdated: rethinkdb.now(),
-          }),{
-            returnChanges: true
-          })
-          .run(connection)
-      })
-      .then(result => {
-        if (result.replaced > 0) {
-          res.json(result.changes[0].new_val)
-        } else {
-          swagger.errors.notFound('game', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  /*
-   * Delete a todo item.
-   */
-  function deleteGame(req, res) {
-    let connection = null
-    const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('games')
-          .get(gameID)
-          .delete()
-          .run(connection)
-      })
-      .then(status => {
-        if (status.deleted == 1) {
-          res.json({success: true})
-        } else {
-          swagger.errors.notFound('game', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function listTrialsForGame(req, res){
-    let connection = null
-    const gameID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .filter({'game':gameID}) 
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(result => res.json(result))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
 }

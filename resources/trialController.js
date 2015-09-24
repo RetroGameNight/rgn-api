@@ -6,16 +6,13 @@
  * LICENSE.txt file in the root directory of this source tree.
  */
  
-import _ from 'lodash' 
 import { isValid } from '../validator'
-import appconfig from '../config/appconfig'
 import { models } from '../models'
-
-function handleError(res, error) {
-  console.log("error", error)
-}
+import TrialServiceClass from './trialService'
 
 export default (swagger, rethinkdb) => {
+
+  const trialService = new TrialServiceClass(rethinkdb)
 
   swagger.addGet({
     'spec': {
@@ -29,7 +26,10 @@ export default (swagger, rethinkdb) => {
       "responseMessages" : [],
       "nickname" : "listTrials",
     },
-    'action': listTrials,
+    'action': (req, res) => {
+      trialService.list('createdAt')
+        .then(results => res.json(results))
+    },
   })
 
   swagger.addGet({
@@ -49,7 +49,14 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "getTrial",
     },
-    'action': getTrial,
+    'action': (req, res) => {
+      const trialID = req.params.id;
+      trialService.get(trialID)
+        .then(result => res.json(result))
+        .catch(error => {
+          swagger.errors.notFound('trial', res)
+        })
+    },
   })
 
   swagger.addPost({
@@ -69,7 +76,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "createTrial",
     },
-    'action': createTrial,
+    'action': (req, res) => {
+      if (req.body) {
+        if (!isValid(req.body, models.Trial)) {
+          swagger.errors.invalid('body', res)
+          return
+        }
+      }
+      trialService.create(req.body)
+        .then(newTrial => res.json(newTrial))
+    },
   })
 
   swagger.addPut({
@@ -92,7 +108,16 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "updateTrial",
     },
-    'action': updateTrial,
+    'action': (req, res) => {
+      if (!isValid(req.body, models.Trial)) {
+        swagger.errors.invalid('body', res)
+        return
+      }
+      const trialID = req.params.id
+      trialService.update(trialID, req.body)
+        .then(updatedTrial => res.json(updatedTrial))
+        .catch(error => swagger.errors.notFound('trial', res))
+    },
   })
 
   swagger.addDelete({
@@ -113,136 +138,11 @@ export default (swagger, rethinkdb) => {
       ],
       "nickname" : "deleteTrial",
     },
-    'action': deleteTrial,
+    'action': (req, res) => {
+      const trialID = req.params.id
+      trialService.delete(trialID)
+        .then(() => res.json({success: true}))
+        .catch(error => swagger.errors.notFound('trial', res))
+    },
   })
-
-  function listTrials(req, res) {
-    let connection = null
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .orderBy({index: "createdAt"})
-          .run(connection)
-      })
-      .then(cursor => cursor.toArray())
-      .then(result => res.json(result))
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function getTrial(req, res) {
-    let connection = null
-    const trialID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .get(trialID)
-          .run(conn)
-      })
-      .then(results => {
-        if (results) {
-          res.json(results)
-        } else {
-          swagger.errors.notFound('trial', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function createTrial(req, res) {
-    if (req.body) {
-      if (!isValid(req.body, models.Trial)) {
-        swagger.errors.invalid('body', res)
-        return
-      }
-    }
-    let connection = null
-    const trial = {}
-    trial.name = req.body.name || "Unnamed Trial"
-    trial.game = req.body.game || "Unnamed Game";
-    trial.type = req.body.type || "Point"
-    trial.description = req.body.description || "A trial description"
-    trial.creator = req.body.creator || "Anonymous"
-    trial.createdAt = rethinkdb.now()
-    trial.lastUpdated = rethinkdb.now()     // Set the field `createdAt` to the current time
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .insert(trial, {returnChanges: true})
-          .run(connection)
-      })
-      .then(result => {
-        if (result.inserted !== 1) {
-            handleError(res, new Error("Document was not inserted."))
-        } else {
-            return res.json(result.changes[0].new_val)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  function updateTrial(req, res) {
-    if (!isValid(req.body, models.Trial)) {
-      swagger.errors.invalid('body', res)
-      return
-    }
-    let connection = null
-    const trialID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .get(trialID)
-          .update(_.merge(req.body, {
-            lastUpdated: rethinkdb.now(),
-          }),{
-            returnChanges: true
-          })
-          .run(connection)
-      })
-      .then(result => {
-        if (result.replaced > 0) {
-          res.json(result.changes[0].new_val)
-        } else {
-          swagger.errors.notFound('trial', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
-
-  /*
-   * Delete a todo item.
-   */
-  function deleteTrial(req, res) {
-    let connection = null
-    const trialID = req.params.id
-    rethinkdb.connect(appconfig.rethinkdb)
-      .then(conn => {
-        connection = conn
-        return rethinkdb
-          .table('trials')
-          .get(trialID)
-          .delete()
-          .run(connection)
-      })
-      .then(status => {
-        if (status.deleted == 1) {
-          res.json({success: true})
-        } else {
-          swagger.errors.notFound('trial', res)
-        }
-      })
-      .then(() => connection.close())
-      .error(error => handleError(res, error))
-  }
 }
