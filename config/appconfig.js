@@ -86,8 +86,6 @@ module.exports = function() {
       }
     }
   };
-
-  console.log(appconfig);
   
   return appconfig;
 }();
