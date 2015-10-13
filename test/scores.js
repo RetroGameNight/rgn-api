@@ -99,7 +99,6 @@ describe('Routing', function(){
 
     it('should update score by id', function(done) {
       var testScoreJSON = {
-        'issuer':'Test Game',
         'trial':'Test Trial',
         'player':'Player 1',
       };

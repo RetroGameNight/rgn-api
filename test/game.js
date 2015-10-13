@@ -152,7 +152,6 @@ function createTestTrial(gameId, callback){
   var testTrialJSON = {
     'name':'Test Trial',
     'game': gameId,
-    'type': 'Point',
     'description': 'Test Description',
     'creator': 'Anonymous'
   };

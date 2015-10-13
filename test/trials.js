@@ -73,7 +73,6 @@ describe('Routing', function(){
       var testTrialJSON = {
         'name':'Test Trial',
         'game':'Test Game',
-        'type':'Test Type',
         'description':'Test Description',
         'creator':'Anonymous'
       };
