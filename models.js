@@ -113,13 +113,16 @@ export default {
           description: "The player that achived the score",
           type: "string",
         },
-        issuer: {
+        creator: {
           description: "The user created the score",
           type: "string",
         },
         trial: {
           description: "the trial this score relates to",
           type: "string",
+        },
+        values: {
+          description: "The values of the trial's fields",
         },
         createdAt: {
           description: "the time the score object was created",
@@ -144,11 +147,7 @@ export default {
         },
         game: {
           description: "the id of game object this trial relates to",
-          type: "string",
-        },
-        type: {
-          description: "The type of the trial",
-          type: "string",
+          type: "string"
         },
         description: {
           description: "The description of the trial",
@@ -157,6 +156,9 @@ export default {
         creator: {
           description: "The id of the user who created the trial",
           type: "string",
+        },
+        fields: {
+          description: "The different fields of the trial",
         },
         createdAt: {
           description: "the time the score object was created",

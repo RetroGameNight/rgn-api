@@ -15,10 +15,10 @@ export default class TrialService extends Service {
       'trials', 
       {
         name: "Unnamed Trial",
-        game: "Unnamed Game",
-        type: "Point",
+        game: "",
         description: "A trial description",
-        creator: "Anonymous",
+        creator: "",
+        fields: {},
       }
     )
   }

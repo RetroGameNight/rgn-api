@@ -14,12 +14,10 @@ export default class ScoreService extends Service {
       rethinkdb, 
       'scores', 
       {
-        issuer: "Anonymous",
-        player: "Anonymous",
-        user: 'Anonymous',
-        challenge: 'Super Mario 10000 Points',
-        status: 'Open',
-        result: '',
+        creator: "",
+        player: "",
+        trial: "",
+        values: {},
       }
     )
   }
